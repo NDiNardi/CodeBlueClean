@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CodeBlue.Data/CodeBlue.Data.csproj" />
+  <Project Path="CodeBlue.Web/CodeBlue.Web.csproj" />
+</Solution>
