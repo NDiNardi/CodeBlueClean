@@ -1,0 +1,48 @@
+﻿@rendermode InteractiveServer
+<div class="auth-nav">
+
+    <div class="menu-container">
+        <button class="menu-button"
+                @onclick="ToggleMenu"
+                aria-haspopup="true"
+                aria-expanded="@isOpen">
+            ☰
+        </button>
+
+        @if (isOpen)
+        {
+            <div class="menu-dropdown">
+                <a href="/office" @onclick="CloseMenu">Dashboard</a>
+                <a href="/work-orders" @onclick="CloseMenu">Service Requests</a>
+                <a href="/work-orders" @onclick="CloseMenu">Work Orders</a>
+                <a href="/customers" @onclick="CloseMenu">Customers</a>
+                <a href="/claims" @onclick="CloseMenu">Claims</a>
+
+                <hr />
+
+                <a href="#" @onclick="CloseMenu">Account Settings</a>
+
+                <form method="post" action="/auth/logout">
+                    <button type="submit" class="logout-button">
+                        Log out
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+
+</div>
+
+@code {
+    private bool isOpen;
+
+    private void ToggleMenu()
+    {
+        isOpen = !isOpen;
+    }
+
+    private void CloseMenu()
+    {
+        isOpen = false;
+    }
+}

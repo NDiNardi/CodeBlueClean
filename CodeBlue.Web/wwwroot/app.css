@@ -58,3 +58,50 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.auth-nav {
+    position: relative;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.menu-container {
+    position: relative;
+}
+
+.menu-button {
+    font-size: 1.25rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    min-width: 200px;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 0.5rem 0;
+    z-index: 1000;
+}
+
+    .menu-dropdown a,
+    .menu-dropdown button {
+        width: 100%;
+        padding: 0.5rem 1rem;
+        background: none;
+        border: none;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .menu-dropdown hr {
+        margin: 0.5rem 0;
+    }
+
+.auth-nav .menu-container:hover .menu-dropdown,
+.auth-nav .menu-container:focus-within .menu-dropdown {
+}
