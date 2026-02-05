@@ -1,0 +1,36 @@
+﻿@using Microsoft.AspNetCore.Components
+
+<MudCard Class="action-card" Elevation="1" @onclick="Navigate">
+
+    <MudCardContent>
+
+        <MudText Typo="Typo.subtitle1" Class="mb-1">
+            @Title
+        </MudText>
+
+        <MudText Typo="Typo.h4" Class="mb-1">
+            @Count
+        </MudText>
+
+        <MudText Typo="Typo.caption" Color="Color.Secondary">
+            @Description
+        </MudText>
+
+    </MudCardContent>
+
+</MudCard>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Count { get; set; } = string.Empty;
+    [Parameter] public string Description { get; set; } = string.Empty;
+    [Parameter] public string Href { get; set; } = string.Empty;
+
+    [Inject] NavigationManager Nav { get; set; } = default!;
+
+    private void Navigate()
+    {
+        if (!string.IsNullOrWhiteSpace(Href))
+            Nav.NavigateTo(Href);
+    }
+}

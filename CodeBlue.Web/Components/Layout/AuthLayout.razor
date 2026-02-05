@@ -1,20 +1,22 @@
 ﻿@layout MudProviderLayout
 @inherits LayoutComponentBase
 
-<MudLayout Class="app-layout">
+<div class="app-background">
+    <MudLayout Class="app-layout">
 
-    <MudAppBar Color="Color.Primary" Elevation="1">
-        <MudText Typo="Typo.h6" Class="ml-2">
-            CodeBlue
-        </MudText>
+        <MudAppBar Color="Color.Primary" Elevation="1">
+            <MudText Typo="Typo.h6" Class="ml-2">
+                CodeBlue
+            </MudText>
 
-        <MudSpacer />
+            <MudSpacer />
 
-        <AuthNav />
-    </MudAppBar>
+            <AuthNav />
+        </MudAppBar>
 
-    <MudMainContent>
-        @Body
-    </MudMainContent>
+        <MudMainContent>
+            @Body
+        </MudMainContent>
 
-</MudLayout>
+    </MudLayout>
+</div>

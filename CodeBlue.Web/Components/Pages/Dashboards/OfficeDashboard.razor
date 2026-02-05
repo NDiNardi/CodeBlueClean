@@ -4,8 +4,46 @@
 
 <PageTitle>Office Dashboard</PageTitle>
 
-<h1>Office Dashboard</h1>
+<MudContainer MaxWidth="MaxWidth.False" Class="office-dashboard">
 
-<p>
-    Office overview (service requests, work orders, claims).
-</p>
+    <MudText Typo="Typo.h5" Class="mb-3">
+        Office Dashboard
+    </MudText>
+
+    <MudGrid Spacing="2">
+
+        <MudItem xs="12" sm="6" md="3">
+            <ActionCard
+                Title="Service Requests"
+                Count="—"
+                Description="New requests awaiting scheduling"
+                Href="/service-requests" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <ActionCard
+                Title="Work Orders"
+                Count="—"
+                Description="Active and scheduled jobs"
+                Href="/work-orders" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <ActionCard
+                Title="Customers"
+                Count="—"
+                Description="Customer records and history"
+                Href="/customers" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <ActionCard
+                Title="Claims"
+                Count="—"
+                Description="Warranty and service claims"
+                Href="/claims" />
+        </MudItem>
+
+    </MudGrid>
+
+</MudContainer>
