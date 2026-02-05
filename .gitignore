@@ -1,9 +1,11 @@
 # Build artifacts
-.vs/
 **/bin/
 **/obj/
 
-# User-specific files
+# Visual Studio
+.vs/
+
+# User files
 *.user
 *.suo
 

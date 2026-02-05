@@ -1,8 +1,10 @@
 ﻿@page "/login"
 @rendermode InteractiveServer
-@using CodeBlue.Web.Auth
-@inject AuthService Auth
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
 @inject NavigationManager Nav
+@inject HttpClient Http
 
 <h3>Login</h3>
 
@@ -17,31 +19,38 @@
 <div>
     <input placeholder="Password" type="password" @bind="_password" />
 </div>
+
 <button @onclick="Submit">Login</button>
 
 @code {
-    @code {
-    protected override void OnInitialized()
-    {
-        Console.WriteLine("Login OnInitialized");
-    }
-}
-    
-    
     string _username = "";
     string _password = "";
     string? _error;
 
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        if (state.User.Identity?.IsAuthenticated == true)
+        {
+            Nav.NavigateTo("/", replace: true, forceLoad: true);
+        }
+    }
+
     async Task Submit()
     {
-        var (ok, error) = await Auth.LoginAsync(_username, _password);
-        if (!ok)
+
+        var response = await Http.PostAsJsonAsync(
+            "/auth/login",
+            new { Username = _username, Password = _password });
+
+        if (!response.IsSuccessStatusCode)
         {
-            _error = error;
+            _error = "Invalid login";
             return;
         }
 
-        // FULL reload to avoid Blazor circuit weirdness
+        // 🔑 FULL PAGE RELOAD so cookie is applied
         Nav.NavigateTo("/", forceLoad: true);
     }
 }
