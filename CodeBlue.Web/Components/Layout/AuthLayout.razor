@@ -1,0 +1,22 @@
+﻿@inherits LayoutComponentBase
+
+<div class="auth-layout">
+
+    <header>
+        <nav>
+            <a href="/office">Dashboard</a>
+            <a href="/work-orders">Work Orders</a>
+            <a href="/claims">Claims</a>
+            <a href="/customers">Customers</a>
+
+            <form method="post" action="/auth/logout" style="display:inline;">
+                <button type="submit">Log out</button>
+            </form>
+        </nav>
+    </header>
+
+    <main>
+        @Body
+    </main>
+
+</div>
