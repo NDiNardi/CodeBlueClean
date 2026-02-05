@@ -2,6 +2,7 @@ using CodeBlue.Data;
 using CodeBlue.Web.Auth;
 using CodeBlue.Web.Components;
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -10,6 +11,8 @@ using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 
 using MudBlazor.Services;
+
+using System.Security.Claims;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -59,16 +62,42 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
 	.AddInteractiveServerRenderMode();
-app.MapPost("/auth/login", async (
-	HttpContext http,
-	AuthService auth,
-	CodeBlue.Web.Auth.LoginRequest req ) =>
+app.MapPost("/auth/login", async ( HttpContext http ) =>
 {
-	var (ok, error) = await auth.LoginAsync(req.Username, req.Password);
+	var form = await http.Request.ReadFormAsync();
 
-	if (!ok)
-		return Results.BadRequest(error);
+	var username = form["Username"].ToString();
+	var password = form["Password"].ToString();
 
-	return Results.Ok();
+	if (username != "admin" || password != "password")
+	{
+		return Results.Redirect("/login");
+	}
+
+	var claims = new List<Claim>
+	{
+		new Claim(ClaimTypes.Name, username)
+	};
+
+	var identity = new ClaimsIdentity(
+		claims,
+		CookieAuthenticationDefaults.AuthenticationScheme);
+
+	var principal = new ClaimsPrincipal(identity);
+
+	await http.SignInAsync(
+		CookieAuthenticationDefaults.AuthenticationScheme,
+		principal);
+
+	return Results.Redirect("/");
 });
+app.MapPost("/auth/logout", async ( HttpContext http ) =>
+{
+	await http.SignOutAsync(
+		CookieAuthenticationDefaults.AuthenticationScheme);
+
+	return Results.Redirect("/login");
+});
+
+
 app.Run();
