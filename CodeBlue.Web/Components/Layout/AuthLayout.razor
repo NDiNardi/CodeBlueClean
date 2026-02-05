@@ -1,10 +1,11 @@
-﻿@inherits LayoutComponentBase
+﻿@layout MudProviderLayout
+@inherits LayoutComponentBase
 
 <div class="auth-layout">
 
-<header>
-    <AuthNav />
-</header>
+    <header style="display:flex; justify-content:flex-end; padding:8px 16px;">
+        <AuthNav />
+    </header>
 
     <main>
         @Body

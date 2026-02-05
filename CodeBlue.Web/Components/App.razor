@@ -1,6 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,10 +16,12 @@
 </head>
 <body>
 
-<CascadingAuthenticationState>
-    <Routes />
-</CascadingAuthenticationState>
+    <CascadingAuthenticationState>
+        <Routes @rendermode="InteractiveServer" />
+    </CascadingAuthenticationState>
 
-<script src="_framework/blazor.server.js"></script>
+    <script src="_framework/blazor.server.js"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+
 </body>
 </html>

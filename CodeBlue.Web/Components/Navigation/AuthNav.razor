@@ -1,48 +1,36 @@
 ﻿@rendermode InteractiveServer
-<div class="auth-nav">
 
-    <div class="menu-container">
-        <button class="menu-button"
-                @onclick="ToggleMenu"
-                aria-haspopup="true"
-                aria-expanded="@isOpen">
-            ☰
-        </button>
+<MudMenu AnchorOrigin="Origin.TopRight"
+         TransformOrigin="Origin.TopRight"
+         OffsetY="true">
 
-        @if (isOpen)
-        {
-            <div class="menu-dropdown">
-                <a href="/office" @onclick="CloseMenu">Dashboard</a>
-                <a href="/work-orders" @onclick="CloseMenu">Service Requests</a>
-                <a href="/work-orders" @onclick="CloseMenu">Work Orders</a>
-                <a href="/customers" @onclick="CloseMenu">Customers</a>
-                <a href="/claims" @onclick="CloseMenu">Claims</a>
+    <ActivatorContent>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Primary"
+                       Edge="Edge.End"
+                       Size="Size.Medium" />
+    </ActivatorContent>
 
-                <hr />
+    <ChildContent>
+        <MudMenuItem Href="/office">Dashboard</MudMenuItem>
+        <MudMenuItem Href="/work-orders">Service Requests</MudMenuItem>
+        <MudMenuItem Href="/work-orders">Work Orders</MudMenuItem>
+        <MudMenuItem Href="/customers">Customers</MudMenuItem>
+        <MudMenuItem Href="/claims">Claims</MudMenuItem>
 
-                <a href="#" @onclick="CloseMenu">Account Settings</a>
+        <MudDivider />
 
-                <form method="post" action="/auth/logout">
-                    <button type="submit" class="logout-button">
-                        Log out
-                    </button>
-                </form>
-            </div>
-        }
-    </div>
+        <MudMenuItem Disabled="true">Account Settings</MudMenuItem>
 
-</div>
-
-@code {
-    private bool isOpen;
-
-    private void ToggleMenu()
-    {
-        isOpen = !isOpen;
-    }
-
-    private void CloseMenu()
-    {
-        isOpen = false;
-    }
-}
+        <MudMenuItem>
+            <form method="post" action="/auth/logout" style="margin:0;">
+                <MudButton Type="Submit"
+                           Variant="Variant.Text"
+                           Color="Color.Error"
+                           FullWidth="true">
+                    Log out
+                </MudButton>
+            </form>
+        </MudMenuItem>
+    </ChildContent>
+</MudMenu>
