@@ -1,17 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace CodeBlue.Data.Entities;
+﻿namespace CodeBlue.Data.Entities;
 
 public class User
 {
-	public Guid Id { get; set; }
+	public int Id { get; set; }
 
-	[Required]
-	public string Email { get; set; } = "";
+	public string Username { get; set; } = "";
 
-	[Required]
 	public string PasswordHash { get; set; } = "";
 
-	[Required]
-	public string Role { get; set; } = ""; // Office | Technician
+	public string Role { get; set; } = "";
+
+	public bool IsActive { get; set; } = true;
 }

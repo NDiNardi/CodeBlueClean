@@ -1,8 +1,6 @@
 ﻿using CodeBlue.Data;
 using CodeBlue.Data.Entities;
 
-using Microsoft.AspNetCore.Identity;
-
 namespace CodeBlue.Web.Data;
 
 public static class SeedData
@@ -12,25 +10,23 @@ public static class SeedData
 		if (db.Users.Any())
 			return;
 
-		var hasher = new PasswordHasher<User>();
+		db.Users.AddRange(
+			new User
+			{
+				Username = "office",
+				PasswordHash = "password", // TEMP
+				Role = "Office",
+				IsActive = true
+			},
+			new User
+			{
+				Username = "tech",
+				PasswordHash = "password", // TEMP
+				Role = "Technician",
+				IsActive = true
+			}
+		);
 
-		var office = new User
-		{
-			Id = Guid.NewGuid(),
-			Email = "office@codeblue.local",
-			Role = "Office"
-		};
-		office.PasswordHash = hasher.HashPassword(office, "password");
-
-		var tech = new User
-		{
-			Id = Guid.NewGuid(),
-			Email = "tech@codeblue.local",
-			Role = "Technician"
-		};
-		tech.PasswordHash = hasher.HashPassword(tech, "password");
-
-		db.Users.AddRange(office, tech);
 		db.SaveChanges();
 	}
 }

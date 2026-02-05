@@ -1,0 +1,47 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@using CodeBlue.Web.Auth
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<h3>Login</h3>
+
+@if (_error != null)
+{
+    <div style="color:red">@_error</div>
+}
+
+<div>
+    <input placeholder="Username" @bind="_username" />
+</div>
+<div>
+    <input placeholder="Password" type="password" @bind="_password" />
+</div>
+<button @onclick="Submit">Login</button>
+
+@code {
+    @code {
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Login OnInitialized");
+    }
+}
+    
+    
+    string _username = "";
+    string _password = "";
+    string? _error;
+
+    async Task Submit()
+    {
+        var (ok, error) = await Auth.LoginAsync(_username, _password);
+        if (!ok)
+        {
+            _error = error;
+            return;
+        }
+
+        // FULL reload to avoid Blazor circuit weirdness
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+}
