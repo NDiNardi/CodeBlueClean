@@ -1,0 +1,686 @@
+﻿@page "/admin/import-workorders"
+@layout AuthLayout
+@using System.Globalization
+@using System.Text.RegularExpressions
+@using CsvHelper
+@using CsvHelper.Configuration
+@using Microsoft.AspNetCore.Authorization
+@using CodeBlue.Data
+@using CodeBlue.Data.Entities
+@inject AppDbContext Db
+@inject ISnackbar Snackbar
+
+@attribute [Authorize]
+
+<PageTitle>Import Work Orders</PageTitle>
+
+<MudPaper Class="pa-6" MaxWidth="1200px" Style="margin: 24px auto;">
+    <MudText Typo="Typo.h4" GutterBottom>Import Work Orders (CSV)</MudText>
+
+    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-4">
+        Work Orders are the same record type as Service Requests in your workflow. Status drives meaning:
+        <b>Pending</b> = request, <b>Active</b> = scheduled work order.
+    </MudAlert>
+
+    <MudStepper linear="true" @bind-ActiveIndex="_step">
+
+        <!-- STEP 1: UPLOAD -->
+        <MudStep label="Upload">
+            <MudStack Spacing="2">
+                <MudFileUpload T="IBrowserFile" FilesChanged="OnFileChanged">
+                    <ActivatorContent>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary">
+                            Choose CSV File
+                        </MudButton>
+                    </ActivatorContent>
+                </MudFileUpload>
+
+                @if (!string.IsNullOrWhiteSpace(_fileName))
+                {
+                    <MudText Typo="Typo.caption">
+                        Loaded: @_fileName (@_rows.Count rows read)
+                    </MudText>
+                }
+            </MudStack>
+        </MudStep>
+
+        <!-- STEP 2: MAP -->
+        <MudStep label="Map Fields" Disabled="@(!_headers.Any())">
+            <MudText Typo="Typo.body2" Class="mb-3">
+                Map CSV columns to WorkOrder fields. Choose <i>(ignore)</i> to skip.
+                <br />
+                <b>Tip:</b> If your CSV has <b>AddressKey</b>, map it. Otherwise we’ll generate it from Service Street 1.
+            </MudText>
+
+            <MudGrid>
+                @foreach (var key in _mappingKeys)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="string" Label="@key" @bind-Value="_mappings[key]">
+                            <MudSelectItem T="string" Value="@IgnoreValue">(ignore)</MudSelectItem>
+                            @foreach (var h in _headers)
+                            {
+                                <MudSelectItem T="string" Value="@h">@h</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Outlined" OnClick="BuildPreview">Refresh Preview</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => _step = 2)">Next</MudButton>
+            </MudStack>
+        </MudStep>
+
+        <!-- STEP 3: PREVIEW / IMPORT -->
+        <MudStep label="Preview & Import" Disabled="@(!_rows.Any())">
+            <MudText Typo="Typo.body2" Class="mb-2">
+                Previewing first 25 rows. Rows without <b>Service Street 1</b> are skipped.
+            </MudText>
+
+            <MudPaper Class="pa-2" Style="overflow-x:auto;">
+                <MudTable Items="_preview" Dense="true" Hover="true" Bordered="true">
+                    <HeaderContent>
+                        <MudTh Style="min-width:260px;">Service Street 1 (cleaned)</MudTh>
+                        <MudTh Style="min-width:180px;">City</MudTh>
+                        <MudTh Style="min-width:90px;">State</MudTh>
+                        <MudTh Style="min-width:120px;">Zip</MudTh>
+                        <MudTh Style="min-width:320px;">ServiceAddress (display)</MudTh>
+
+                        <MudTh Style="min-width:120px;">Gate Code</MudTh>
+                        <MudTh Style="min-width:110px;">Animals</MudTh>
+
+                        <MudTh Style="min-width:160px;">Scheduled Date</MudTh>
+                        <MudTh Style="min-width:160px;">Startup Date</MudTh>
+
+                        <MudTh Style="min-width:160px;">Assigned To</MudTh>
+                        <MudTh Style="min-width:120px;">Status</MudTh>
+
+                        <MudTh Style="min-width:220px;">Builder Company</MudTh>
+                        <MudTh Style="min-width:160px;">Builder Phone</MudTh>
+                        <MudTh Style="min-width:220px;">Builder Email</MudTh>
+
+                        <MudTh Style="min-width:220px;">Service Contact</MudTh>
+                        <MudTh Style="min-width:160px;">Service Phone</MudTh>
+
+                        <MudTh Style="min-width:200px;">AddressKey</MudTh>
+
+                        <MudTh Style="min-width:140px;">Lat</MudTh>
+                        <MudTh Style="min-width:140px;">Lng</MudTh>
+
+                        <MudTh Style="min-width:200px;">Completed By</MudTh>
+                        <MudTh Style="min-width:200px;">Legacy Record ID</MudTh>
+                    </HeaderContent>
+
+                    <RowTemplate>
+                        <MudTd>@context.ServiceStreet1</MudTd>
+                        <MudTd>@context.ServiceCity</MudTd>
+                        <MudTd>@context.ServiceState</MudTd>
+                        <MudTd>@context.ServiceZip</MudTd>
+                        <MudTd>@context.ServiceAddress</MudTd>
+
+                        <MudTd>@context.GateCode</MudTd>
+                        <MudTd>@context.AnimalsPresent</MudTd>
+
+                        <MudTd>@(context.ScheduledServiceDate?.ToString() ?? "")</MudTd>
+                        <MudTd>@(context.ServiceStartupDate?.ToString() ?? "")</MudTd>
+
+                        <MudTd>@context.AssignedTo</MudTd>
+                        <MudTd>@context.Status</MudTd>
+
+                        <MudTd>@context.BuilderCompanyName</MudTd>
+                        <MudTd>@context.BuilderPhoneNumber</MudTd>
+                        <MudTd>@context.BuilderEmail</MudTd>
+
+                        <MudTd>@context.ServiceContact</MudTd>
+                        <MudTd>@context.ServicePhone</MudTd>
+
+                        <MudTd>@context.AddressKey</MudTd>
+
+                        <MudTd>@(context.ServiceLatitude?.ToString() ?? "")</MudTd>
+                        <MudTd>@(context.ServiceLongitude?.ToString() ?? "")</MudTd>
+
+                        <MudTd>@context.CompletedBy</MudTd>
+                        <MudTd>@context.LegacyRecordId</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Outlined" OnClick="Reset">Reset</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@_isBusy" OnClick="Import">
+                    @(_isBusy ? "Importing..." : "Import")
+                </MudButton>
+            </MudStack>
+        </MudStep>
+
+    </MudStepper>
+</MudPaper>
+
+@code {
+    private const string IgnoreValue = "__IGNORE__";
+
+    private int _step = 0;
+    private bool _isBusy = false;
+
+    private string _fileName = "";
+    private readonly List<string> _headers = new();
+    private readonly List<Dictionary<string, string>> _rows = new();
+
+    // Fields we allow mapping
+    private readonly List<string> _mappingKeys = new()
+    {
+        // Builder-Contact person field (split)
+        "BuilderContact",
+        "BuilderContactTitle",
+        "BuilderContactFirst",
+        "BuilderContactMiddle",
+        "BuilderContactLast",
+
+        "LegacyRecordId",
+
+        // ServiceAddress
+        "ServiceAddress",
+        "ServiceStreet1",
+        "ServiceStreet2",
+        "ServiceCity",
+        "ServiceState",
+        "ServiceZip",
+        "ServiceCountry",
+        "ServiceLatitude",
+        "ServiceLongitude",
+
+        "GateCode",
+        "AnimalsPresent",
+
+        "ServiceStartupDate",
+        "ServiceDetails",
+
+        // ServiceContact person field (split)
+        "ServiceContact",
+        "ServiceContactTitle",
+        "ServiceContactFirst",
+        "ServiceContactMiddle",
+        "ServiceContactLast",
+
+        "ServicePhone",
+
+        // Builder info
+        "BuilderCompanyName",
+        "BuilderPhoneNumber",
+        "BuilderEmail",
+
+        // scheduling / workflow
+        "ScheduledServiceDate",
+        "AddressKey",
+        "AssignedTo",
+        "Status",
+        "Space",
+        "PreKey",
+        "CompletedBy"
+    };
+
+    // Defaults for your exact header names
+    private readonly Dictionary<string, string> _mappings = new()
+    {
+        ["BuilderContact"] = "Builder-Contact",
+        ["BuilderContactTitle"] = "Builder-Contact : Title",
+        ["BuilderContactFirst"] = "Builder-Contact : First",
+        ["BuilderContactMiddle"] = "Builder-Contact : Middle",
+        ["BuilderContactLast"] = "Builder-Contact : Last",
+
+        ["LegacyRecordId"] = "Record ID",
+
+        ["ServiceAddress"] = "ServiceAddress",
+        ["ServiceStreet1"] = "ServiceAddress : Street 1",
+        ["ServiceStreet2"] = "ServiceAddress : Street 2",
+        ["ServiceCity"] = "ServiceAddress : City",
+        ["ServiceState"] = "ServiceAddress : State",
+        ["ServiceZip"] = "ServiceAddress : Zip",
+        ["ServiceCountry"] = "ServiceAddress : Country",
+        ["ServiceLatitude"] = "ServiceAddress : Latitude",
+        ["ServiceLongitude"] = "ServiceAddress : Longitude",
+
+        ["GateCode"] = "Gate Code",
+        ["AnimalsPresent"] = "Animals Present",
+
+        ["ServiceStartupDate"] = "ServiceStartupDate",
+        ["ServiceDetails"] = "ServiceDetails",
+
+        ["ServiceContact"] = "ServiceContact",
+        ["ServiceContactTitle"] = "ServiceContact : Title",
+        ["ServiceContactFirst"] = "ServiceContact : First",
+        ["ServiceContactMiddle"] = "ServiceContact : Middle",
+        ["ServiceContactLast"] = "ServiceContact : Last",
+
+        ["ServicePhone"] = "ServicePhone",
+
+        ["BuilderCompanyName"] = "Builder-CompanyName",
+        ["BuilderPhoneNumber"] = "Builder-Phone Number",
+        ["BuilderEmail"] = "Builder-Email",
+
+        ["ScheduledServiceDate"] = "Scheduled Service Date",
+        ["AddressKey"] = "AddressKey",
+        ["AssignedTo"] = "Assigned To",
+        ["Status"] = "Status",
+        ["Space"] = "Space",
+        ["PreKey"] = "PreKey",
+        ["CompletedBy"] = "Completed By",
+    };
+
+    private List<WorkOrderPreviewRow> _preview = new();
+
+    private async Task OnFileChanged( IBrowserFile file )
+    {
+        Reset();
+        _fileName = file.Name;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
+        using var reader = new StreamReader(stream);
+
+        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            BadDataFound = null,
+            MissingFieldFound = null,
+            HeaderValidated = null,
+            DetectDelimiter = true
+        };
+
+        using var csv = new CsvReader(reader, config);
+
+        if (!await csv.ReadAsync() || !csv.ReadHeader())
+        {
+            Snackbar.Add("Could not read CSV header row.", Severity.Error);
+            return;
+        }
+
+        _headers.AddRange(csv.HeaderRecord ?? Array.Empty<string>());
+
+        // Validate default mappings exist; otherwise ignore.
+        foreach (var key in _mappingKeys)
+        {
+            if (!_mappings.ContainsKey(key))
+                _mappings[key] = IgnoreValue;
+
+            if (_mappings[key] != IgnoreValue && !_headers.Contains(_mappings[key]))
+                _mappings[key] = IgnoreValue;
+        }
+
+        while (await csv.ReadAsync() && _rows.Count < 20000)
+        {
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var h in _headers)
+                dict[h] = csv.GetField(h) ?? "";
+            _rows.Add(dict);
+        }
+
+        BuildPreview();
+        _step = 1;
+    }
+
+    private void BuildPreview()
+    {
+        _preview = _rows
+            .Select(MapRowToPreview)
+            .Where(r => !string.IsNullOrWhiteSpace(r.ServiceStreet1))
+            .Take(25)
+            .ToList();
+
+        StateHasChanged();
+    }
+
+    private WorkOrderPreviewRow MapRowToPreview( Dictionary<string, string> row )
+    {
+        string Get( string key )
+        {
+            if (!_mappings.TryGetValue(key, out var header))
+                return "";
+            if (string.IsNullOrWhiteSpace(header) || header == IgnoreValue)
+                return "";
+            return row.TryGetValue(header, out var v) ? (v ?? "") : "";
+        }
+
+        static DateOnly? ParseDate( string s )
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return null;
+            if (DateTime.TryParse(s, out var dt))
+                return DateOnly.FromDateTime(dt);
+            return null;
+        }
+
+        static bool ParseBool( string s )
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return false;
+            var t = s.Trim().ToLowerInvariant();
+            return t is "yes" or "y" or "true" or "1";
+        }
+
+        static decimal? ParseDecimal( string s )
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return null;
+            if (decimal.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
+                return d;
+            if (decimal.TryParse(s, NumberStyles.Any, CultureInfo.CurrentCulture, out d))
+                return d;
+            return null;
+        }
+
+        var street1 = NormalizeStreet(Get("ServiceStreet1"));
+        var street2 = NormalizeStreet(Get("ServiceStreet2"));
+
+        var city = NormalizeCityState(Get("ServiceCity"));
+        var state = NormalizeCityState(Get("ServiceState"));
+        var zip = NormalizeZip(Get("ServiceZip"));
+
+        var addrFromCsv = NormalizeText(Get("ServiceAddress"));
+        var displayAddress = !string.IsNullOrWhiteSpace(addrFromCsv)
+            ? addrFromCsv
+            : BuildDisplayAddress(street1, street2, city, state, zip);
+
+        var addressKeyFromCsv = NormalizeAddressKey(Get("AddressKey"));
+        var generatedAddressKey = GenerateAddressKeyFromStreet1(street1);
+
+        return new WorkOrderPreviewRow
+        {
+            BuilderContact = NullIfEmpty(NormalizeText(Get("BuilderContact"))),
+            BuilderContactTitle = NullIfEmpty(NormalizeText(Get("BuilderContactTitle"))),
+            BuilderContactFirst = NullIfEmpty(NormalizeText(Get("BuilderContactFirst"))),
+            BuilderContactMiddle = NullIfEmpty(NormalizeText(Get("BuilderContactMiddle"))),
+            BuilderContactLast = NullIfEmpty(NormalizeText(Get("BuilderContactLast"))),
+
+            LegacyRecordId = NullIfEmpty(NormalizeText(Get("LegacyRecordId"))),
+
+            ServiceAddress = displayAddress,
+            ServiceStreet1 = street1,
+            ServiceStreet2 = NullIfEmpty(street2),
+            ServiceCity = city,
+            ServiceState = state,
+            ServiceZip = zip,
+            ServiceCountry = NullIfEmpty(NormalizeText(Get("ServiceCountry"))),
+            ServiceLatitude = ParseDecimal(Get("ServiceLatitude")),
+            ServiceLongitude = ParseDecimal(Get("ServiceLongitude")),
+
+            GateCode = NullIfEmpty(NormalizeText(Get("GateCode"))),
+            AnimalsPresent = ParseBool(Get("AnimalsPresent")),
+
+            ServiceStartupDate = ParseDate(Get("ServiceStartupDate")),
+            ServiceDetails = NullIfEmpty(NormalizeText(Get("ServiceDetails"))),
+
+            ServiceContact = NullIfEmpty(NormalizeText(Get("ServiceContact"))),
+            ServiceContactTitle = NullIfEmpty(NormalizeText(Get("ServiceContactTitle"))),
+            ServiceContactFirst = NullIfEmpty(NormalizeText(Get("ServiceContactFirst"))),
+            ServiceContactMiddle = NullIfEmpty(NormalizeText(Get("ServiceContactMiddle"))),
+            ServiceContactLast = NullIfEmpty(NormalizeText(Get("ServiceContactLast"))),
+
+            ServicePhone = NullIfEmpty(NormalizePhone(Get("ServicePhone"))),
+
+            BuilderCompanyName = NullIfEmpty(NormalizeText(Get("BuilderCompanyName"))),
+            BuilderPhoneNumber = NullIfEmpty(NormalizePhone(Get("BuilderPhoneNumber"))),
+            BuilderEmail = NullIfEmpty(NormalizeText(Get("BuilderEmail"))),
+
+            ScheduledServiceDate = ParseDate(Get("ScheduledServiceDate")),
+            AssignedTo = NullIfEmpty(NormalizeText(Get("AssignedTo"))),
+            Status = NullIfEmpty(NormalizeText(Get("Status"))),
+            Space = NullIfEmpty(NormalizeText(Get("Space"))),
+            PreKey = NullIfEmpty(NormalizeText(Get("PreKey"))),
+            CompletedBy = NullIfEmpty(NormalizeText(Get("CompletedBy"))),
+
+            AddressKey = !string.IsNullOrWhiteSpace(addressKeyFromCsv) ? addressKeyFromCsv : generatedAddressKey
+        };
+    }
+
+    private async Task Import()
+    {
+        if (_isBusy)
+            return;
+        _isBusy = true;
+
+        try
+        {
+            var workOrders = _rows
+                .Select(MapRowToPreview)
+                .Where(p => !string.IsNullOrWhiteSpace(p.ServiceStreet1))
+                .Select(p => new WorkOrder
+                {
+                    Id = Guid.NewGuid(),
+
+                    BuilderContact = p.BuilderContact,
+                    BuilderContactTitle = p.BuilderContactTitle,
+                    BuilderContactFirst = p.BuilderContactFirst,
+                    BuilderContactMiddle = p.BuilderContactMiddle,
+                    BuilderContactLast = p.BuilderContactLast,
+
+                    LegacyRecordId = p.LegacyRecordId,
+
+                    ServiceAddress = p.ServiceAddress,
+                    ServiceStreet1 = p.ServiceStreet1,
+                    ServiceStreet2 = p.ServiceStreet2,
+                    ServiceCity = p.ServiceCity,
+                    ServiceState = p.ServiceState,
+                    ServiceZip = p.ServiceZip,
+                    ServiceCountry = p.ServiceCountry,
+                    ServiceLatitude = p.ServiceLatitude,
+                    ServiceLongitude = p.ServiceLongitude,
+
+                    GateCode = p.GateCode,
+                    AnimalsPresent = p.AnimalsPresent,
+
+                    ServiceStartupDate = p.ServiceStartupDate,
+                    ServiceDetails = p.ServiceDetails,
+
+                    ServiceContact = p.ServiceContact,
+                    ServiceContactTitle = p.ServiceContactTitle,
+                    ServiceContactFirst = p.ServiceContactFirst,
+                    ServiceContactMiddle = p.ServiceContactMiddle,
+                    ServiceContactLast = p.ServiceContactLast,
+
+                    ServicePhone = p.ServicePhone,
+
+                    BuilderCompanyName = p.BuilderCompanyName,
+                    BuilderPhoneNumber = p.BuilderPhoneNumber,
+                    BuilderEmail = p.BuilderEmail,
+
+                    ScheduledServiceDate = p.ScheduledServiceDate,
+                    AssignedTo = p.AssignedTo,
+                    Status = p.Status,
+                    Space = p.Space,
+                    PreKey = p.PreKey,
+                    CompletedBy = p.CompletedBy,
+
+                    AddressKey = p.AddressKey
+                })
+                // avoid duplicates inside incoming file
+                .GroupBy(w => w.AddressKey, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
+
+            if (workOrders.Count == 0)
+            {
+                Snackbar.Add("No valid rows found (Service Street 1 is required).", Severity.Warning);
+                return;
+            }
+
+            Db.WorkOrders.AddRange(workOrders);
+            await Db.SaveChangesAsync();
+
+            Snackbar.Add($"Imported {workOrders.Count} work orders.", Severity.Success);
+            Reset();
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            Snackbar.Add($"Import failed: {msg}", Severity.Error);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private void Reset()
+    {
+        _step = 0;
+        _isBusy = false;
+        _fileName = "";
+        _headers.Clear();
+        _rows.Clear();
+        _preview = new();
+        StateHasChanged();
+    }
+
+    // -------------------------
+    // Normalization helpers
+    // -------------------------
+
+    private static string NormalizeStreet( string s )
+    {
+        s = (s ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+
+        // Remove common punctuation (keep # and -)
+        s = s.Replace(".", " ").Replace(",", " ").Replace(";", " ").Replace(":", " ");
+
+        // Insert missing space after leading house number: 1708BLACK -> 1708 BLACK
+        s = Regex.Replace(s, @"^(\d+)([A-Za-z])", "$1 $2");
+
+        // Collapse whitespace
+        s = Regex.Replace(s, @"\s+", " ").Trim();
+
+        return s.ToUpperInvariant();
+    }
+
+    private static string NormalizeCityState( string s )
+    {
+        s = (s ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+        s = Regex.Replace(s, @"\s+", " ").Trim();
+        return s.ToUpperInvariant();
+    }
+
+    private static string NormalizeZip( string s )
+    {
+        s = (s ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+        return new string(s.Where(c => char.IsDigit(c) || c == '-').ToArray());
+    }
+
+    private static string NormalizeText( string s )
+    {
+        s = (s ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+        return Regex.Replace(s, @"\s+", " ").Trim();
+    }
+
+    private static string NormalizePhone( string s )
+    {
+        s = (s ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+        return new string(s.Where(char.IsDigit).ToArray());
+    }
+
+    private static string BuildDisplayAddress( string street1, string street2, string city, string state, string zip )
+    {
+        var line1 = street1;
+        if (!string.IsNullOrWhiteSpace(street2))
+            line1 = $"{line1} {street2}".Trim();
+
+        var line2 = "";
+        if (!string.IsNullOrWhiteSpace(city))
+            line2 += city;
+        if (!string.IsNullOrWhiteSpace(state))
+        {
+            if (line2.Length > 0)
+                line2 += ", ";
+            line2 += state;
+        }
+        if (!string.IsNullOrWhiteSpace(zip))
+        {
+            if (line2.Length > 0)
+                line2 += " ";
+            line2 += zip;
+        }
+
+        if (string.IsNullOrWhiteSpace(line2))
+            return line1.Trim();
+
+        return $"{line1.Trim()}, {line2.Trim()}";
+    }
+
+    private static string NormalizeAddressKey( string s )
+    {
+        s = (s ?? "").Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+        return new string(s.Where(char.IsLetterOrDigit).ToArray());
+    }
+
+    private static string GenerateAddressKeyFromStreet1( string street1 )
+    {
+        if (string.IsNullOrWhiteSpace(street1))
+            return "";
+        return new string(street1.ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
+    }
+
+    private static string? NullIfEmpty( string s )
+        => string.IsNullOrWhiteSpace(s) ? null : s;
+
+    private sealed class WorkOrderPreviewRow
+    {
+        public string? BuilderContact { get; set; }
+        public string? BuilderContactTitle { get; set; }
+        public string? BuilderContactFirst { get; set; }
+        public string? BuilderContactMiddle { get; set; }
+        public string? BuilderContactLast { get; set; }
+
+        public string? LegacyRecordId { get; set; }
+
+        public string ServiceAddress { get; set; } = "";
+        public string ServiceStreet1 { get; set; } = "";
+        public string? ServiceStreet2 { get; set; }
+        public string ServiceCity { get; set; } = "";
+        public string ServiceState { get; set; } = "";
+        public string ServiceZip { get; set; } = "";
+        public string? ServiceCountry { get; set; }
+        public decimal? ServiceLatitude { get; set; }
+        public decimal? ServiceLongitude { get; set; }
+
+        public string? GateCode { get; set; }
+        public bool AnimalsPresent { get; set; }
+
+        public DateOnly? ServiceStartupDate { get; set; }
+        public string? ServiceDetails { get; set; }
+
+        public string? ServiceContact { get; set; }
+        public string? ServiceContactTitle { get; set; }
+        public string? ServiceContactFirst { get; set; }
+        public string? ServiceContactMiddle { get; set; }
+        public string? ServiceContactLast { get; set; }
+
+        public string? ServicePhone { get; set; }
+
+        public string? BuilderCompanyName { get; set; }
+        public string? BuilderPhoneNumber { get; set; }
+        public string? BuilderEmail { get; set; }
+
+        public DateOnly? ScheduledServiceDate { get; set; }
+        public string AddressKey { get; set; } = "";
+        public string? AssignedTo { get; set; }
+        public string? Status { get; set; }
+        public string? Space { get; set; }
+        public string? PreKey { get; set; }
+        public string? CompletedBy { get; set; }
+    }
+}

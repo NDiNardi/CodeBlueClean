@@ -1,0 +1,577 @@
+﻿@page "/admin/import-customers"
+@layout AuthLayout
+@using System.Globalization
+@using System.Text.RegularExpressions
+@using CsvHelper
+@using CsvHelper.Configuration
+@using Microsoft.AspNetCore.Authorization
+@using CodeBlue.Data
+@using CodeBlue.Data.Entities
+@inject AppDbContext Db
+@inject ISnackbar Snackbar
+
+@attribute [Authorize]
+
+<PageTitle>Import Customers</PageTitle>
+
+<MudPaper Class="pa-6" MaxWidth="1200px" Style="margin: 24px auto;">
+    <MudText Typo="Typo.h4" GutterBottom>Import Customers (CSV)</MudText>
+
+    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-4">
+        Imports customer/site records from your Knack export. This importer also <b>normalizes Street 1</b>
+        (missing spaces after house number, punctuation, extra whitespace) to improve searching and matching.
+    </MudAlert>
+
+    <MudStepper linear="true" @bind-ActiveIndex="_step">
+
+        <!-- STEP 1: UPLOAD -->
+        <MudStep label="Upload">
+            <MudStack Spacing="2">
+                <MudFileUpload T="IBrowserFile" FilesChanged="OnFileChanged">
+                    <ActivatorContent>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary">
+                            Choose CSV File
+                        </MudButton>
+                    </ActivatorContent>
+                </MudFileUpload>
+
+                @if (!string.IsNullOrWhiteSpace(_fileName))
+                {
+                    <MudText Typo="Typo.caption">
+                        Loaded: @_fileName (@_rows.Count rows read)
+                    </MudText>
+                }
+            </MudStack>
+        </MudStep>
+
+        <!-- STEP 2: MAP -->
+        <MudStep label="Map Fields" Disabled="@(!_headers.Any())">
+            <MudText Typo="Typo.body2" Class="mb-3">
+                Map CSV columns to Customer fields. Choose <i>(ignore)</i> to skip.
+                <br />
+                <b>Tip:</b> If your CSV has <b>AddressKey</b>, map it. Otherwise we’ll generate it from Street 1.
+            </MudText>
+
+            <MudGrid>
+                @foreach (var key in _mappingKeys)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="string" Label="@key" @bind-Value="_mappings[key]">
+                            <MudSelectItem T="string" Value="@IgnoreValue">(ignore)</MudSelectItem>
+                            @foreach (var h in _headers)
+                            {
+                                <MudSelectItem T="string" Value="@h">@h</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Outlined" OnClick="BuildPreview">Refresh Preview</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => _step = 2)">Next</MudButton>
+            </MudStack>
+        </MudStep>
+
+        <!-- STEP 3: PREVIEW / IMPORT -->
+        <MudStep label="Preview & Import" Disabled="@(!_rows.Any())">
+            <MudText Typo="Typo.body2" Class="mb-2">
+                Previewing first 25 rows. Rows without <b>Street 1</b> are skipped.
+            </MudText>
+
+            <MudPaper Class="pa-2" Style="overflow-x:auto;">
+                <MudTable Items="_preview" Dense="true" Hover="true" Bordered="true">
+                    <HeaderContent>
+                        <MudTh Style="min-width:220px;">Street 1 (cleaned)</MudTh>
+                        <MudTh Style="min-width:180px;">City</MudTh>
+                        <MudTh Style="min-width:90px;">State</MudTh>
+                        <MudTh Style="min-width:120px;">Zip</MudTh>
+                        <MudTh Style="min-width:320px;">Address (display)</MudTh>
+
+                        <MudTh Style="min-width:180px;">Startup Date</MudTh>
+                        <MudTh Style="min-width:120px;">Status</MudTh>
+
+                        <MudTh Style="min-width:200px;">Contact Name</MudTh>
+                        <MudTh Style="min-width:160px;">Contact Phone</MudTh>
+                        <MudTh Style="min-width:220px;">Contact Email</MudTh>
+
+                        <MudTh Style="min-width:200px;">Gate Codes</MudTh>
+                        <MudTh Style="min-width:110px;">Animals</MudTh>
+
+                        <MudTh Style="min-width:260px;">Installer/Dealer</MudTh>
+
+                        <MudTh Style="min-width:180px;">AddressKey</MudTh>
+
+                        <MudTh Style="min-width:140px;">Lat</MudTh>
+                        <MudTh Style="min-width:140px;">Lng</MudTh>
+
+                        <MudTh Style="min-width:180px;">Knack Record ID</MudTh>
+                    </HeaderContent>
+
+                    <RowTemplate>
+                        <MudTd>@context.Street1</MudTd>
+                        <MudTd>@context.City</MudTd>
+                        <MudTd>@context.State</MudTd>
+                        <MudTd>@context.Zip</MudTd>
+                        <MudTd>@context.Address</MudTd>
+
+                        <MudTd>@(context.StartupDate?.ToString() ?? "")</MudTd>
+                        <MudTd>@context.Status</MudTd>
+
+                        <MudTd>@context.ContactName</MudTd>
+                        <MudTd>@context.ContactPhone</MudTd>
+                        <MudTd>@context.ContactEmail</MudTd>
+
+                        <MudTd>@context.GateCodes</MudTd>
+                        <MudTd>@context.AnimalsPresent</MudTd>
+
+                        <MudTd>@context.OriginalInstallerDealer</MudTd>
+
+                        <MudTd>@context.AddressKey</MudTd>
+
+                        <MudTd>@(context.Latitude?.ToString() ?? "")</MudTd>
+                        <MudTd>@(context.Longitude?.ToString() ?? "")</MudTd>
+
+                        <MudTd>@context.LegacyRecordId</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Outlined" OnClick="Reset">Reset</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@_isBusy" OnClick="Import">
+                    @(_isBusy ? "Importing..." : "Import")
+                </MudButton>
+            </MudStack>
+        </MudStep>
+
+    </MudStepper>
+</MudPaper>
+
+@code {
+    private const string IgnoreValue = "__IGNORE__";
+
+    private int _step = 0;
+    private bool _isBusy = false;
+
+    private string _fileName = "";
+    private readonly List<string> _headers = new();
+    private readonly List<Dictionary<string, string>> _rows = new();
+
+    // Keys we allow mapping from CSV
+    private readonly List<string> _mappingKeys = new()
+    {
+        // Knack columns (or equivalents)
+        "Address",          // combined display
+        "Street1",
+        "Street2",
+        "City",
+        "State",
+        "Zip",
+        "Country",
+        "Latitude",
+        "Longitude",
+        "StartupDate",
+        "Status",
+        "ContactName",
+        "LegacyRecordId",   // Knack "Record ID"
+        "ContactPhone",
+        "ContactEmail",
+        "GateCodes",
+        "AnimalsPresent",
+        "OriginalInstallerDealer",
+        "AddressKey"
+    };
+
+    // Defaults tailored to your Knack export headers
+    private readonly Dictionary<string, string> _mappings = new()
+    {
+        ["Address"] = "Address",
+        ["Street1"] = "Address : Street 1",
+        ["Street2"] = "Address : Street 2",
+        ["City"] = "Address : City",
+        ["State"] = "Address : State",
+        ["Zip"] = "Address : Zip",
+        ["Country"] = "Address : Country",
+        ["Latitude"] = "Address : Latitude",
+        ["Longitude"] = "Address : Longitude",
+        ["StartupDate"] = "Startup Date",
+        ["Status"] = "Status",
+        ["ContactName"] = "Contact Name",
+        ["LegacyRecordId"] = "Record ID",
+        ["ContactPhone"] = "Contact Phone",
+        ["ContactEmail"] = "Contact E-Mail",
+        ["GateCodes"] = "Gate Codes",
+        ["AnimalsPresent"] = "Animals Present",
+        ["OriginalInstallerDealer"] = "Original Installer/Dealer",
+        ["AddressKey"] = "AddressKey"
+    };
+
+    private List<CustomerPreviewRow> _preview = new();
+
+    private async Task OnFileChanged( IBrowserFile file )
+    {
+        Reset();
+        _fileName = file.Name;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
+        using var reader = new StreamReader(stream);
+
+        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            BadDataFound = null,
+            MissingFieldFound = null,
+            HeaderValidated = null,
+            DetectDelimiter = true
+        };
+
+        using var csv = new CsvReader(reader, config);
+
+        if (!await csv.ReadAsync() || !csv.ReadHeader())
+        {
+            Snackbar.Add("Could not read CSV header row.", Severity.Error);
+            return;
+        }
+
+        _headers.AddRange(csv.HeaderRecord ?? Array.Empty<string>());
+
+        // Validate default mappings exist in this file; otherwise ignore.
+        foreach (var key in _mappingKeys)
+        {
+            if (!_mappings.ContainsKey(key))
+                _mappings[key] = IgnoreValue;
+
+            if (_mappings[key] != IgnoreValue && !_headers.Contains(_mappings[key]))
+                _mappings[key] = IgnoreValue;
+        }
+
+        while (await csv.ReadAsync() && _rows.Count < 20000)
+        {
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var h in _headers)
+                dict[h] = csv.GetField(h) ?? "";
+            _rows.Add(dict);
+        }
+
+        BuildPreview();
+        _step = 1;
+    }
+
+    private void BuildPreview()
+    {
+        _preview = _rows
+            .Select(MapRowToPreview)
+            .Where(r => !string.IsNullOrWhiteSpace(r.Street1))
+            .Take(25)
+            .ToList();
+
+        StateHasChanged();
+    }
+
+    private CustomerPreviewRow MapRowToPreview( Dictionary<string, string> row )
+    {
+        string Get( string key )
+        {
+            if (!_mappings.TryGetValue(key, out var header))
+                return "";
+            if (string.IsNullOrWhiteSpace(header) || header == IgnoreValue)
+                return "";
+            return row.TryGetValue(header, out var v) ? (v ?? "") : "";
+        }
+
+        static DateOnly? ParseDate( string s )
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return null;
+            if (DateTime.TryParse(s, out var dt))
+                return DateOnly.FromDateTime(dt);
+            return null;
+        }
+
+        static bool ParseBool( string s )
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return false;
+            var t = s.Trim().ToLowerInvariant();
+            return t is "yes" or "y" or "true" or "1";
+        }
+
+        static decimal? ParseDecimal( string s )
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return null;
+            if (decimal.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
+                return d;
+            if (decimal.TryParse(s, NumberStyles.Any, CultureInfo.CurrentCulture, out d))
+                return d;
+            return null;
+        }
+
+        var street1 = NormalizeStreet(Get("Street1"));
+        var street2 = NormalizeStreet(Get("Street2"));
+
+        var city = NormalizeCityState(Get("City"));
+        var state = NormalizeCityState(Get("State"));
+        var zip = NormalizeZip(Get("Zip"));
+
+        var addressFromCsv = NormalizeText(Get("Address"));
+        var displayAddress = !string.IsNullOrWhiteSpace(addressFromCsv)
+            ? addressFromCsv
+            : BuildDisplayAddress(street1, street2, city, state, zip);
+
+        var addressKeyFromCsv = NormalizeAddressKey(Get("AddressKey"));
+        var generatedAddressKey = GenerateAddressKeyFromStreet1(street1);
+
+        return new CustomerPreviewRow
+        {
+            Address = displayAddress,
+            Street1 = street1,
+            Street2 = NullIfEmpty(street2),
+            City = city,
+            State = state,
+            Zip = zip,
+            Country = NullIfEmpty(NormalizeText(Get("Country"))),
+
+            Latitude = ParseDecimal(Get("Latitude")),
+            Longitude = ParseDecimal(Get("Longitude")),
+
+            StartupDate = ParseDate(Get("StartupDate")),
+            Status = NullIfEmpty(NormalizeText(Get("Status"))),
+
+            ContactName = NullIfEmpty(NormalizeText(Get("ContactName"))),
+            LegacyRecordId = NullIfEmpty(NormalizeText(Get("LegacyRecordId"))),
+            ContactPhone = NullIfEmpty(NormalizePhone(Get("ContactPhone"))),
+            ContactEmail = NullIfEmpty(NormalizeText(Get("ContactEmail"))),
+
+            GateCodes = NullIfEmpty(NormalizeText(Get("GateCodes"))),
+            AnimalsPresent = ParseBool(Get("AnimalsPresent")),
+
+            OriginalInstallerDealer = NullIfEmpty(NormalizeText(Get("OriginalInstallerDealer"))),
+
+            AddressKey = !string.IsNullOrWhiteSpace(addressKeyFromCsv) ? addressKeyFromCsv : generatedAddressKey
+        };
+    }
+
+    private async Task Import()
+    {
+        if (_isBusy)
+            return;
+        _isBusy = true;
+
+        try
+        {
+            var customers = _rows
+                .Select(MapRowToPreview)
+                .Where(p => !string.IsNullOrWhiteSpace(p.Street1))
+                .Select(p => new Customer
+                {
+                    Id = Guid.NewGuid(),
+
+                    Address = p.Address,
+                    Street1 = p.Street1,
+                    Street2 = p.Street2,
+                    City = p.City,
+                    State = p.State,
+                    Zip = p.Zip,
+                    Country = p.Country,
+
+                    Latitude = p.Latitude,
+                    Longitude = p.Longitude,
+
+                    StartupDate = p.StartupDate,
+                    Status = p.Status,
+
+                    ContactName = p.ContactName,
+                    LegacyRecordId = p.LegacyRecordId,
+                    ContactPhone = p.ContactPhone,
+                    ContactEmail = p.ContactEmail,
+
+                    GateCodes = p.GateCodes,
+                    AnimalsPresent = p.AnimalsPresent,
+
+                    OriginalInstallerDealer = p.OriginalInstallerDealer,
+
+                    AddressKey = p.AddressKey
+                })
+                // avoid duplicates inside the incoming file
+                .GroupBy(c => c.AddressKey, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
+
+            if (customers.Count == 0)
+            {
+                Snackbar.Add("No valid rows found (Street 1 is required).", Severity.Warning);
+                return;
+            }
+
+            Db.Customers.AddRange(customers);
+            await Db.SaveChangesAsync();
+
+            Snackbar.Add($"Imported {customers.Count} customers.", Severity.Success);
+            Reset();
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            Snackbar.Add($"Import failed: {msg}", Severity.Error);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private void Reset()
+    {
+        _step = 0;
+        _isBusy = false;
+        _fileName = "";
+        _headers.Clear();
+        _rows.Clear();
+        _preview = new();
+        StateHasChanged();
+    }
+
+    // -------------------------
+    // Normalization helpers
+    // -------------------------
+
+    private static string NormalizeStreet( string s )
+    {
+        s = (s ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+
+        // Remove common punctuation (keep # and -)
+        s = s.Replace(".", " ").Replace(",", " ").Replace(";", " ").Replace(":", " ");
+
+        // Insert missing space after leading house number: 1708BLACK -> 1708 BLACK
+        s = Regex.Replace(s, @"^(\d+)([A-Za-z])", "$1 $2");
+
+        // Collapse whitespace
+        s = Regex.Replace(s, @"\s+", " ").Trim();
+
+        return s.ToUpperInvariant();
+    }
+
+    private static string NormalizeCityState( string s )
+    {
+        s = (s ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+        s = Regex.Replace(s, @"\s+", " ").Trim();
+        return s.ToUpperInvariant();
+    }
+
+    private static string NormalizeZip( string s )
+    {
+        s = (s ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+        // Keep digits and dash only (ZIP+4 ok)
+        return new string(s.Where(c => char.IsDigit(c) || c == '-').ToArray());
+    }
+
+    private static string NormalizeText( string s )
+    {
+        s = (s ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+        return Regex.Replace(s, @"\s+", " ").Trim();
+    }
+
+    private static string NormalizePhone( string s )
+    {
+        s = (s ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+        // digits only
+        return new string(s.Where(char.IsDigit).ToArray());
+    }
+
+    private static string BuildDisplayAddress( string street1, string street2, string city, string state, string zip )
+    {
+        var line1 = street1;
+        if (!string.IsNullOrWhiteSpace(street2))
+            line1 = $"{line1} {street2}".Trim();
+
+        var line2 = "";
+        if (!string.IsNullOrWhiteSpace(city))
+            line2 += city;
+        if (!string.IsNullOrWhiteSpace(state))
+        {
+            if (line2.Length > 0)
+                line2 += ", ";
+            line2 += state;
+        }
+        if (!string.IsNullOrWhiteSpace(zip))
+        {
+            if (line2.Length > 0)
+                line2 += " ";
+            line2 += zip;
+        }
+
+        if (string.IsNullOrWhiteSpace(line2))
+            return line1.Trim();
+
+        return $"{line1.Trim()}, {line2.Trim()}";
+    }
+
+    private static string NormalizeAddressKey( string s )
+    {
+        s = (s ?? "").Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(s))
+            return "";
+
+        // remove spaces + punctuation (keep alnum only)
+        return new string(s.Where(char.IsLetterOrDigit).ToArray());
+    }
+
+    // AddressKey strategy (your original intent): street number + street name only (no city/state/zip)
+    private static string GenerateAddressKeyFromStreet1( string street1 )
+    {
+        if (string.IsNullOrWhiteSpace(street1))
+            return "";
+
+        // already upper + spaced; remove everything except letters/digits
+        var cleaned = new string(street1.ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
+        return cleaned;
+    }
+
+    private static string? NullIfEmpty( string s )
+        => string.IsNullOrWhiteSpace(s) ? null : s;
+
+    private sealed class CustomerPreviewRow
+    {
+        public string Address { get; set; } = "";
+
+        public string Street1 { get; set; } = "";
+        public string? Street2 { get; set; }
+        public string City { get; set; } = "";
+        public string State { get; set; } = "";
+        public string Zip { get; set; } = "";
+        public string? Country { get; set; }
+
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+
+        public DateOnly? StartupDate { get; set; }
+        public string? Status { get; set; }
+
+        public string? ContactName { get; set; }
+        public string? LegacyRecordId { get; set; }
+        public string? ContactPhone { get; set; }
+        public string? ContactEmail { get; set; }
+
+        public string? GateCodes { get; set; }
+        public bool AnimalsPresent { get; set; }
+
+        public string? OriginalInstallerDealer { get; set; }
+
+        public string AddressKey { get; set; } = "";
+    }
+}

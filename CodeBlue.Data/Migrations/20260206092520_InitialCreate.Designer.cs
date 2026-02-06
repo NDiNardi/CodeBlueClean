@@ -4,6 +4,7 @@ using CodeBlue.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CodeBlue.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260206092520_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -134,103 +137,52 @@ namespace CodeBlue.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AddressKey")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("ClaimNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("CompletedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("CompletedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("ComponentCode")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ComponentSerialNumber")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("Country")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("CustomerId")
+                    b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateOnly?>("FailureDate")
                         .HasColumnType("date");
 
-                    b.Property<string>("IdSerialNumber")
+                    b.Property<string>("Manufacturer")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Image1")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Image1Url")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Image2")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Image2Url")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("Latitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("decimal(9,6)");
-
-                    b.Property<string>("LegacyRecordId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("Longitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("decimal(9,6)");
 
                     b.Property<string>("ModelNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateOnly?>("OriginalInstallationDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("OriginalInstallerDealer")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateOnly?>("RepairDate")
                         .HasColumnType("date");
 
-                    b.Property<string>("ServiceRequest")
+                    b.Property<string>("SerialImage1Path")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("State")
-                        .IsRequired()
+                    b.Property<string>("SerialImage2Path")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("SerialNumber")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Street1")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
-                    b.Property<string>("Street2")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("WorkOrderId")
+                    b.Property<Guid>("WorkOrderId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Zip")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -249,122 +201,75 @@ namespace CodeBlue.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("AddressKey")
+                    b.Property<string>("AddressSnapshot")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("AnimalsPresent")
+                    b.Property<bool>("AnimalsPresentSnapshot")
                         .HasColumnType("bit");
 
-                    b.Property<string>("AssignedTo")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("AssignedTechnicianUserId")
+                        .HasColumnType("int");
 
                     b.Property<string>("BuilderCompanyName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("BuilderContact")
+                    b.Property<string>("BuilderContactFirstName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("BuilderContactFirst")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BuilderContactLast")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BuilderContactMiddle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BuilderContactTitle")
+                    b.Property<string>("BuilderContactLastName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("BuilderEmail")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("BuilderPhoneNumber")
+                    b.Property<string>("BuilderPhone")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("CompletedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime?>("CompletedUtc")
+                        .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("CustomerId")
+                    b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("GateCode")
+                    b.Property<string>("GateCodeSnapshot")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("LegacyRecordId")
+                    b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PreKey")
+                    b.Property<string>("ProblemDescription")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateOnly?>("ScheduledServiceDate")
                         .HasColumnType("date");
 
-                    b.Property<string>("ServiceAddress")
+                    b.Property<string>("ServiceContactFirstName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ServiceCity")
+                    b.Property<string>("ServiceContactLastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ServiceContact")
+                    b.Property<string>("ServiceContactPhone")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ServiceContactFirst")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
-                    b.Property<string>("ServiceContactLast")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("SubmittedUtc")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("ServiceContactMiddle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ServiceContactTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ServiceCountry")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ServiceDetails")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("ServiceLatitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("decimal(9,6)");
-
-                    b.Property<decimal?>("ServiceLongitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("decimal(9,6)");
-
-                    b.Property<string>("ServicePhone")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateOnly?>("ServiceStartupDate")
+                    b.Property<DateOnly?>("SystemStartupDate")
                         .HasColumnType("date");
-
-                    b.Property<string>("ServiceState")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ServiceStreet1")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ServiceStreet2")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ServiceZip")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Space")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -378,12 +283,14 @@ namespace CodeBlue.Data.Migrations
                     b.HasOne("CodeBlue.Data.Entities.Customer", "Customer")
                         .WithMany("WarrantyClaims")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("CodeBlue.Data.Entities.WorkOrder", "WorkOrder")
                         .WithMany("WarrantyClaims")
                         .HasForeignKey("WorkOrderId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Customer");
 
@@ -395,7 +302,8 @@ namespace CodeBlue.Data.Migrations
                     b.HasOne("CodeBlue.Data.Entities.Customer", "Customer")
                         .WithMany("WorkOrders")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Customer");
                 });

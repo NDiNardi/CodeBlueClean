@@ -4,109 +4,138 @@
 
 <PageTitle>Request Service</PageTitle>
 
-<MudPaper Class="pa-6" MaxWidth="720px" Style="margin: 24px auto;">
-    <MudText Typo="Typo.h4" GutterBottom>Request for Service</MudText>
-    <MudText Typo="Typo.body1" Class="mb-4">
-        Tell us what you need and where. We’ll review your request and contact you.
-        Scheduling is coordinated by area/route.
-    </MudText>
+<MudPaper Class="pa-6" MaxWidth="900px" Style="margin: 24px auto;">
+    <MudText Typo="Typo.h4" GutterBottom>REQUEST FOR SERVICE</MudText>
 
-    <MudForm @ref="_form" Model="_model">
+    <MudForm @ref="_form">
 
-        <MudText Typo="Typo.h6" Class="mt-2">Contact</MudText>
-        <MudGrid>
-            <MudItem xs="12" sm="6">
-                <MudTextField Label="First name" @bind-Value="_model.FirstName" Required="true" />
-            </MudItem>
-            <MudItem xs="12" sm="6">
-                <MudTextField Label="Last name" @bind-Value="_model.LastName" Required="true" />
-            </MudItem>
+        <!-- 1. Service Location -->
+        <MudText Typo="Typo.h6" Class="mt-4">1. Service Location</MudText>
 
-            <MudItem xs="12" sm="6">
-                <MudSelect T="ContactMethod" Label="Preferred contact" @bind-Value="_model.PreferredContactMethod" Required="true">
-                    <MudSelectItem Value="ContactMethod.Call">Call</MudSelectItem>
-                    <MudSelectItem Value="ContactMethod.Text">Text</MudSelectItem>
-                    <MudSelectItem Value="ContactMethod.Email">Email</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-
-            <MudItem xs="12" sm="6">
-                <MudTextField Label="Phone" @bind-Value="_model.Phone" />
+        <MudGrid Class="mt-2">
+            <MudItem xs="12">
+                <MudTextField Label="Street Address *"
+                              @bind-Value="_model.Street1"
+                              Required="true" />
             </MudItem>
 
             <MudItem xs="12">
-                <MudTextField Label="Email" @bind-Value="_model.Email" />
+                <MudTextField Label="Street Address 2"
+                              @bind-Value="_model.Street2" />
             </MudItem>
-        </MudGrid>
 
-        <MudDivider Class="my-4" />
-
-        <MudText Typo="Typo.h6">Service location</MudText>
-        <MudGrid>
-            <MudItem xs="12">
-                <MudTextField Label="Street address" @bind-Value="_model.Street1" Required="true" />
-            </MudItem>
-            <MudItem xs="12">
-                <MudTextField Label="Apt / Unit (optional)" @bind-Value="_model.Street2" />
-            </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField Label="City" @bind-Value="_model.City" Required="true" />
+                <MudTextField Label="City *"
+                              @bind-Value="_model.City"
+                              Required="true" />
             </MudItem>
+
             <MudItem xs="12" sm="3">
-                <MudTextField Label="State" @bind-Value="_model.State" Required="true" />
+                <MudTextField Label="State *"
+                              @bind-Value="_model.State"
+                              Required="true" />
             </MudItem>
+
             <MudItem xs="12" sm="3">
-                <MudTextField Label="ZIP" @bind-Value="_model.PostalCode" Required="true" />
+                <MudTextField Label="Zip *"
+                              @bind-Value="_model.Zip"
+                              Required="true" />
             </MudItem>
-        </MudGrid>
 
-        <MudDivider Class="my-4" />
-
-        <MudText Typo="Typo.h6">Request details</MudText>
-        <MudGrid>
-            <MudItem xs="12" sm="6">
-                <MudSelect T="ServiceCategory" Label="Service type (optional)" @bind-Value="_model.ServiceCategory">
-                    <MudSelectItem Value="ServiceCategory.General">General</MudSelectItem>
-                    <MudSelectItem Value="ServiceCategory.Equipment">Equipment</MudSelectItem>
-                    <MudSelectItem Value="ServiceCategory.Leak">Leak</MudSelectItem>
-                    <MudSelectItem Value="ServiceCategory.Heater">Heater</MudSelectItem>
-                    <MudSelectItem Value="ServiceCategory.Other">Other</MudSelectItem>
-                </MudSelect>
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle2" Class="mt-2">Who can we contact to schedule the service? *</MudText>
             </MudItem>
 
             <MudItem xs="12" sm="6">
-                <MudSelect T="Urgency" Label="Urgency (optional)" @bind-Value="_model.Urgency">
-                    <MudSelectItem Value="Urgency.Routine">Routine</MudSelectItem>
-                    <MudSelectItem Value="Urgency.Soon">Soon</MudSelectItem>
-                    <MudSelectItem Value="Urgency.Asap">ASAP</MudSelectItem>
+                <MudTextField Label="First *"
+                              @bind-Value="_model.ServiceContactFirst"
+                              Required="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField Label="Last *"
+                              @bind-Value="_model.ServiceContactLast"
+                              Required="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField Label="Phone Number *"
+                              @bind-Value="_model.ServiceContactPhone"
+                              Required="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField Label="Gate Code(s)"
+                              @bind-Value="_model.GateCodes" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudSelect T="YesNo" Label="Are there any animals that will need placed inside during the call? *"
+                           @bind-Value="_model.AnimalsPresent"
+                           Required="true">
+                    <MudSelectItem Value="YesNo.Yes">Yes</MudSelectItem>
+                    <MudSelectItem Value="YesNo.No">No</MudSelectItem>
                 </MudSelect>
-            </MudItem>
-
-            <MudItem xs="12">
-                <MudTextField Label="Describe the issue"
-                              @bind-Value="_model.IssueDescription"
-                              Lines="5"
-                              Required="true"
-                              Placeholder="Example: Pump is loud and not moving water. Started yesterday." />
-            </MudItem>
-
-            <MudItem xs="12">
-                <MudTextField Label="Access notes (optional)"
-                              @bind-Value="_model.AccessNotes"
-                              Lines="3"
-                              Placeholder="Gate code, pets, call before arriving, etc." />
-            </MudItem>
-
-            <MudItem xs="12">
-                <MudCheckBox T="bool" @bind-Checked="_model.Consent"
-                             Label="I confirm the above information is accurate and you may contact me about this request." />
-
             </MudItem>
         </MudGrid>
 
-        <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-6" Spacing="2">
-            <MudButton Variant="Variant.Outlined" OnClick="Reset">Clear</MudButton>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit">Submit request</MudButton>
+        <MudDivider Class="my-6" />
+
+        <!-- 2. Builder / Equipment Information -->
+        <MudText Typo="Typo.h6">2. Builder / Equipment Information</MudText>
+
+        <MudGrid Class="mt-2">
+            <MudItem xs="12">
+                <MudTextField Label="Company Name *"
+                              @bind-Value="_model.BuilderCompanyName"
+                              Required="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle2" Class="mt-2">Your Contact Information *</MudText>
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField Label="First *"
+                              @bind-Value="_model.BuilderContactFirst"
+                              Required="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField Label="Last *"
+                              @bind-Value="_model.BuilderContactLast"
+                              Required="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField Label="Your Phone Number *"
+                              @bind-Value="_model.BuilderPhone"
+                              Required="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField Label="Your E-mail (optional)"
+                              @bind-Value="_model.BuilderEmail" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudDatePicker Label="System Startup / Installation Date *"
+                               @bind-Date="_model.InstallDate"
+                               Required="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField Label="Provide a brief description of the problem needing attention. *"
+                              @bind-Value="_model.ProblemDescription"
+                              Lines="4"
+                              Required="true" />
+            </MudItem>
+        </MudGrid>
+
+        <MudStack Row="true" Justify="Justify.FlexStart" Class="mt-6">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit">
+                Submit
+            </MudButton>
         </MudStack>
 
     </MudForm>
@@ -114,58 +143,53 @@
 
 @code {
     private MudForm? _form;
-    private RequestServiceModel _model = new();
+    private RequestForServiceModel _model = new();
 
     private async Task Submit()
     {
-        if (_form is null) return;
+        if (_form is null)
+            return;
         await _form.Validate();
 
-        // Minimal conditional validation until we wire FluentValidation or DataAnnotations
-        if (!_form.IsValid) return;
+        if (!_form.IsValid)
+            return;
 
-        var needsPhone = _model.PreferredContactMethod is ContactMethod.Call or ContactMethod.Text;
-        var needsEmail = _model.PreferredContactMethod is ContactMethod.Email;
-
-        if (needsPhone && string.IsNullOrWhiteSpace(_model.Phone)) return;
-        if (needsEmail && string.IsNullOrWhiteSpace(_model.Email)) return;
-        if (!_model.Consent) return;
-
-        // TODO later: POST to SSR endpoint /api/requests or minimal API
-        // For now: navigate to confirmation page.
-        NavManager.NavigateTo("/request-submitted");
+        // UI-only: no DB / no API yet.
+        Nav.NavigateTo("/request-submitted");
     }
 
-    private void Reset() => _model = new();
+    [Inject] private NavigationManager Nav { get; set; } = default!;
 
-    [Inject] private NavigationManager NavManager { get; set; } = default!;
-
-    private sealed class RequestServiceModel
+    private sealed class RequestForServiceModel
     {
-        // Contact
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-        public ContactMethod PreferredContactMethod { get; set; } = ContactMethod.Text;
-        public string? Phone { get; set; }
-        public string? Email { get; set; }
-
-        // Location
+        // 1. Service Location
         public string? Street1 { get; set; }
         public string? Street2 { get; set; }
         public string? City { get; set; }
         public string? State { get; set; }
-        public string? PostalCode { get; set; }
+        public string? Zip { get; set; }
 
-        // Request
-        public ServiceCategory ServiceCategory { get; set; } = ServiceCategory.General;
-        public Urgency Urgency { get; set; } = Urgency.Routine;
-        public string? IssueDescription { get; set; }
-        public string? AccessNotes { get; set; }
+        public string? ServiceContactFirst { get; set; }
+        public string? ServiceContactLast { get; set; }
+        public string? ServiceContactPhone { get; set; }
 
-        public bool Consent { get; set; }
+        public string? GateCodes { get; set; }
+        public YesNo AnimalsPresent { get; set; } = YesNo.No;
+
+        // 2. Builder / Equipment Information
+        public string? BuilderCompanyName { get; set; }
+        public string? BuilderContactFirst { get; set; }
+        public string? BuilderContactLast { get; set; }
+        public string? BuilderPhone { get; set; }
+        public string? BuilderEmail { get; set; }
+
+        public DateTime? InstallDate { get; set; }
+        public string? ProblemDescription { get; set; }
     }
 
-    private enum ContactMethod { Call, Text, Email }
-    private enum ServiceCategory { General, Equipment, Leak, Heater, Other }
-    private enum Urgency { Routine, Soon, Asap }
+    private enum YesNo
+    {
+        Yes,
+        No
+    }
 }

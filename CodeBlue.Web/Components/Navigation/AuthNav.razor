@@ -2,22 +2,32 @@
 
 <MudMenu AnchorOrigin="Origin.TopRight"
          TransformOrigin="Origin.TopRight"
-         OffsetY="true">
+         offsetY="true">
 
     <ActivatorContent>
         <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                       IconSize="Size.Medium"
+                       iconSize="Size.Medium"
                        Color="Color.Inherit"
                        Edge="Edge.End"
-                       UseSvgIcons="true" />
+                       useSvgIcons="true" />
     </ActivatorContent>
 
     <ChildContent>
         <MudMenuItem Href="/office">Dashboard</MudMenuItem>
+
+        <MudDivider />
+
         <MudMenuItem Href="/work-orders">Service Requests</MudMenuItem>
         <MudMenuItem Href="/work-orders">Work Orders</MudMenuItem>
+
+        <MudDivider />
+
         <MudMenuItem Href="/customers">Customers</MudMenuItem>
         <MudMenuItem Href="/claims">Claims</MudMenuItem>
+
+        <MudDivider />
+
+        <MudMenuItem Href="/admin">Admin Tools</MudMenuItem>
 
         <MudDivider />
 
@@ -25,10 +35,10 @@
 
         <MudMenuItem>
             <form method="post" action="/auth/logout" style="margin:0;">
-                <MudButton Type="Submit"
+                <MudButton type="Submit"
                            Variant="Variant.Text"
                            Color="Color.Error"
-                           FullWidth="true">
+                           fullWidth="true">
                     Log out
                 </MudButton>
             </form>

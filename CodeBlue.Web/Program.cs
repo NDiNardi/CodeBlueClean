@@ -7,10 +7,13 @@ using Microsoft.EntityFrameworkCore;
 
 using MudBlazor.Services;
 
+using System;
 using System.Security.Claims;
 
 
 var builder = WebApplication.CreateBuilder(args);
+Console.WriteLine("ENV=" + builder.Environment.EnvironmentName);
+Console.WriteLine("DefaultConnection=" + builder.Configuration.GetConnectionString("DefaultConnection"));
 
 builder.Services.AddRazorComponents()
 	.AddInteractiveServerComponents();
@@ -19,7 +22,8 @@ builder.Services.AddMudServices();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 	options.UseSqlServer(
-		builder.Configuration.GetConnectionString("Default")));
+		builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 
 
