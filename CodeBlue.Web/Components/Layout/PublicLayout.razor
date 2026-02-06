@@ -1,7 +1,47 @@
-﻿@inherits LayoutComponentBase
+﻿@layout MudProviderLayout
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
 
-<div class="public-layout">
-    <main>
-        @Body
-    </main>
+<div class="app-background">
+    <MudLayout Class="app-layout">
+
+        <MudAppBar Color="Color.Primary" Elevation="1">
+            <MudText Typo="Typo.h6" Class="ml-2">
+                CodeBlue
+            </MudText>
+
+            <MudSpacer />
+
+            <AuthorizeView>
+                <Authorized>
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Inherit"
+                               Href="/office">
+                        Dashboard
+                    </MudButton>
+
+                    <form method="post" action="/auth/logout" style="display:inline;">
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Inherit"
+                                   ButtonType="ButtonType.Submit">
+                            Log out
+                        </MudButton>
+                    </form>
+                </Authorized>
+
+                <NotAuthorized>
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Inherit"
+                               Href="/login">
+                        Employee Login
+                    </MudButton>
+                </NotAuthorized>
+            </AuthorizeView>
+        </MudAppBar>
+
+        <MudMainContent Class="public-main">
+            @Body
+        </MudMainContent>
+
+    </MudLayout>
 </div>

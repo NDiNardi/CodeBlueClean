@@ -52,3 +52,17 @@ html, body {
     background-position: center;
     background-repeat: no-repeat;
 }
+
+.public-layout {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+
+.public-main {
+    padding: 16px;
+}
+
+

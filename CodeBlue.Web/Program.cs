@@ -1,13 +1,8 @@
 using CodeBlue.Data;
-using CodeBlue.Web.Auth;
 using CodeBlue.Web.Components;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Components.Server;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 
 using MudBlazor.Services;
@@ -40,14 +35,11 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 
 builder.Services.AddAuthorization();
-builder.Services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
+
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddHttpClient("ServerAPI", client =>
-{
-	client.BaseAddress = new Uri("https://localhost:7164/");
-});
+
+
 
 builder.Services.AddScoped(sp =>
 	sp.GetRequiredService<IHttpClientFactory>().CreateClient("ServerAPI"));
@@ -89,7 +81,7 @@ app.MapPost("/auth/login", async ( HttpContext http ) =>
 		CookieAuthenticationDefaults.AuthenticationScheme,
 		principal);
 
-	return Results.Redirect("/");
+	return Results.Redirect("/office");
 });
 app.MapPost("/auth/logout", async ( HttpContext http ) =>
 {
