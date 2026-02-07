@@ -4,17 +4,19 @@
 <div class="app-background">
     <MudLayout Class="app-layout">
 
-        <MudAppBar Color="Color.Primary" Elevation="1">
-            <MudText Typo="Typo.h6" Class="ml-2">
-                CodeBlue
-            </MudText>
+        <MudAppBar Fixed="true" Elevation="0" Color="Color.Default" Class="cb-appbar">
+            <div class="cb-brand">
+                <img src="/images/app/CodeBlueIcon.png" alt="CodeBlue" class="cb-logo" />
+                <span class="cb-title">Code Blue</span>
+            </div>
 
             <MudSpacer />
 
             <AuthNav />
         </MudAppBar>
 
-        <MudMainContent>
+
+        <MudMainContent Class="main-content">
             @Body
         </MudMainContent>
 

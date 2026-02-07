@@ -82,8 +82,21 @@ public class WarrantyClaim
 	// "Repair Date"
 	public DateOnly? RepairDate { get; set; }
 
-	// "Status"
+	// -----------------------------
+	// Statuses (keep separate)
+	// -----------------------------
+
+	// Internal lifecycle status: New / Pending / Synced (or whatever you decide)
 	public string? Status { get; set; }
+
+	// Date the office clicked "Claim has been filed"
+	public DateOnly? FiledOnDate { get; set; }
+
+	// Status from Hayward website: Approved / NeedMoreInfo / Denied / etc
+	public string? HaywardStatus { get; set; }
+
+	// When your scraper last updated HaywardStatus / scraped fields
+	public DateOnly? HaywardStatusUpdatedOn { get; set; }
 
 	// -----------------------------
 	// Linkage (both links you want)

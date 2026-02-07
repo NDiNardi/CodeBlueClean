@@ -1,11 +1,211 @@
-﻿@page "/claims/history"
+﻿@page "/claims/{Id:guid}"
 @layout AuthLayout
 @attribute [Authorize]
 
-<PageTitle>Historic Claim</PageTitle>
+@using CodeBlue.Data
+@using CodeBlue.Data.Entities
+@using Microsoft.EntityFrameworkCore
+@using MudBlazor
 
-<h1>Historic Warranty Claim</h1>
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Nav
 
-<p>
-    Read-only completed warranty claim.
-</p>
+<PageTitle>Claim Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="page-gutters page-container">
+
+    <MudPaper Elevation="1" Class="action-card list-card">
+
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.Visibility" />
+                <MudText Class="cb-page-title mb-2">Claim Details</MudText>
+            </MudStack>
+
+            <MudButton Variant="Variant.Outlined"
+                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@BackToList">
+                Back to Claims
+            </MudButton>
+        </MudStack>
+
+        @if (_loading)
+        {
+            <MudDivider Class="my-3" />
+            <MudStack AlignItems="AlignItems.Center" Class="py-6">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+                <MudText Class="mt-3">Loading claim…</MudText>
+            </MudStack>
+        }
+        else if (_claim is null)
+        {
+            <MudDivider Class="my-3" />
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled">
+                Claim not found.
+            </MudAlert>
+        }
+        else
+        {
+            <MudDivider Class="my-3" />
+
+            <MudGrid Spacing="2">
+                <MudItem xs="12" md="6">
+                    <MudPaper Variant="Variant.Outlined" Class="pa-3">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Claim</MudText>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Claim #</div>
+                            <div class="detail-value">@(_claim.ClaimNumber ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value">@(_claim.Status ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Failure Date</div>
+                            <div class="detail-value">@(_claim.FailureDate?.ToString("MM/dd/yyyy") ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Component Code</div>
+                            <div class="detail-value">@(_claim.ComponentCode ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">ID/Serial #</div>
+                            <div class="detail-value">@(_claim.IdSerialNumber ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Component Serial #</div>
+                            <div class="detail-value">@(_claim.ComponentSerialNumber ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Model #</div>
+                            <div class="detail-value">@(_claim.ModelNumber ?? "")</div>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudPaper Variant="Variant.Outlined" Class="pa-3">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Site</MudText>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Address</div>
+                            <div class="detail-value">@(_claim.Address ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">AddressKey</div>
+                            <div class="detail-value">@(_claim.AddressKey ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Customer Linked?</div>
+                            <div class="detail-value">@(_claim.CustomerId.HasValue ? "Yes" : "No")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Work Order Linked?</div>
+                            <div class="detail-value">@(_claim.WorkOrderId.HasValue ? "Yes" : "No")</div>
+                        </div>
+
+                        @if (_claim.CustomerId.HasValue || _claim.WorkOrderId.HasValue)
+                        {
+                            <MudDivider Class="my-3" />
+
+                            <MudStack Row="true" Spacing="2">
+                                <MudButton Disabled="@(!_claim.CustomerId.HasValue)"
+                                           Variant="Variant.Outlined"
+                                           StartIcon="@Icons.Material.Filled.Home"
+                                           OnClick="@(() => GoCustomer(_claim.CustomerId))">
+                                    Customer
+                                </MudButton>
+
+                                <MudButton Disabled="@(!_claim.WorkOrderId.HasValue)"
+                                           Variant="Variant.Outlined"
+                                           StartIcon="@Icons.Material.Filled.Event"
+                                           OnClick="@(() => GoWorkOrder(_claim.WorkOrderId))">
+                                    Work Order
+                                </MudButton>
+                            </MudStack>
+
+                            <MudText Typo="Typo.caption" Class="mt-2">
+                                (Buttons will work once those detail routes exist.)
+                            </MudText>
+                        }
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudPaper Variant="Variant.Outlined" Class="pa-3">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Photos</MudText>
+                        <MudText Typo="Typo.body2">
+                            Images are in the data model later (file storage), but the layout is ready.
+                        </MudText>
+
+                        <MudGrid Spacing="2" Class="mt-2">
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudPaper Class="pa-6" Style="text-align:center; opacity:0.75;">
+                                    <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" />
+                                    <MudText Typo="Typo.caption" Class="mt-2">Image 1</MudText>
+                                </MudPaper>
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudPaper Class="pa-6" Style="text-align:center; opacity:0.75;">
+                                    <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" />
+                                    <MudText Typo="Typo.caption" Class="mt-2">Image 2</MudText>
+                                </MudPaper>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private WarrantyClaim? _claim;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        _claim = await db.WarrantyClaims
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == Id);
+
+        _loading = false;
+    }
+
+    private void BackToList()
+        => Nav.NavigateTo("/claims");
+
+    private void GoCustomer( Guid? customerId )
+    {
+        if (!customerId.HasValue)
+            return;
+        // Route can be added later; placeholder keeps UX pattern consistent.
+        Nav.NavigateTo($"/customers/{customerId.Value}");
+    }
+
+    private void GoWorkOrder( Guid? workOrderId )
+    {
+        if (!workOrderId.HasValue)
+            return;
+        // Route can be added later; placeholder keeps UX pattern consistent.
+        Nav.NavigateTo($"/work-orders/{workOrderId.Value}");
+    }
+}

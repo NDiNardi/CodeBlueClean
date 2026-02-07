@@ -2,10 +2,139 @@
 @layout AuthLayout
 @attribute [Authorize]
 
+@using CodeBlue.Data
+@using CodeBlue.Data.Entities
+@using Microsoft.EntityFrameworkCore
+@using MudBlazor
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Nav
+
 <PageTitle>Customers</PageTitle>
 
-<h1>Customers</h1>
+<MudContainer MaxWidth="MaxWidth.False" Class="page-gutters page-container">
 
-<p>
-    Customer list view.
-</p>
+    <MudPaper Elevation="1" Class="action-card list-card">
+
+        <MudText Class="cb-page-title mb-2">Customers</MudText>
+
+        <MudTextField T="string"
+                      @bind-Value="_search"
+                      Placeholder="Search (Address / AddressKey / Contact / Installer)"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true"
+                      DebounceInterval="250"
+                      OnDebounceIntervalElapsed="Reload"
+                      FullWidth="true"
+                      Class="mb-3" />
+
+        <div class="table-scroll">
+
+            <MudTable T="Customer"
+                      Dense="true"
+                      Hover="true"
+                      Breakpoint="Breakpoint.None"
+                      ServerData="LoadCustomers"
+                      @ref="_table"
+                      RowsPerPage="25"
+                      Style="min-width: 1100px;">
+
+                <HeaderContent>
+                    <MudTh Class="col-action"></MudTh>
+                    <MudTh Class="col-address">Address</MudTh>
+                    <MudTh>Startup</MudTh>
+                    <MudTh>Contact</MudTh>
+                    <MudTh>Phone</MudTh>
+                    <MudTh>Installer / Dealer</MudTh>
+                    <MudTh Class="col-action"></MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd Class="col-action">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                       Size="Size.Small"
+                                       Color="Color.Primary"
+                                       OnClick="@(() => ViewCustomer(context.Id))"
+                                       AriaLabel="View customer" />
+                    </MudTd>
+
+                    <MudTd Class="col-address clamp-2">@context.Address</MudTd>
+
+                    <MudTd>@context.StartupDate?.ToString("MM/dd/yyyy")</MudTd>
+                    <MudTd>@context.ContactName</MudTd>
+                    <MudTd>@context.ContactPhone</MudTd>
+                    <MudTd>@context.OriginalInstallerDealer</MudTd>
+
+                    <MudTd Class="col-action">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Size="Size.Small"
+                                       Color="Color.Secondary"
+                                       OnClick="@(() => Nav.NavigateTo($"/customers/{context.Id}/edit"))"
+                                       AriaLabel="Edit customer" />
+                    </MudTd>
+                </RowTemplate>
+
+
+                <NoRecordsContent>
+                    <MudText Class="pa-4">No customers found.</MudText>
+                </NoRecordsContent>
+
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+
+            </MudTable>
+
+        </div>
+
+    </MudPaper>
+
+</MudContainer>
+
+
+@code {
+    private MudTable<Customer>? _table;
+    private string _search = "";
+
+    private Task Reload()
+        => _table?.ReloadServerData() ?? Task.CompletedTask;
+
+    private void ViewCustomer( Guid id )
+        => Nav.NavigateTo($"/customers/{id}");
+
+    private async Task<TableData<Customer>> LoadCustomers( TableState state, CancellationToken ct )
+    {
+        await using var db = await DbFactory.CreateDbContextAsync(ct);
+
+        IQueryable<Customer> q = db.Customers.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(_search))
+        {
+            var s = _search.Trim();
+
+            q = q.Where(x =>
+                (x.Address != null && EF.Functions.Like(x.Address, $"%{s}%")) ||
+                (x.AddressKey != null && EF.Functions.Like(x.AddressKey, $"%{s}%")) ||
+                (x.ContactName != null && EF.Functions.Like(x.ContactName, $"%{s}%")) ||
+                (x.ContactPhone != null && EF.Functions.Like(x.ContactPhone, $"%{s}%")) ||
+                (x.OriginalInstallerDealer != null && EF.Functions.Like(x.OriginalInstallerDealer, $"%{s}%"))
+            );
+        }
+
+        q = q.OrderBy(x => x.Address);
+
+        var total = await q.CountAsync(ct);
+
+        var items = await q
+            .Skip(state.Page * state.PageSize)
+            .Take(state.PageSize)
+            .ToListAsync(ct);
+
+        return new TableData<Customer>
+        {
+            TotalItems = total,
+            Items = items
+        };
+    }
+}

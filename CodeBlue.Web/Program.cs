@@ -1,4 +1,4 @@
-using CodeBlue.Data;
+﻿using CodeBlue.Data;
 using CodeBlue.Web.Components;
 
 using Microsoft.AspNetCore.Authentication;
@@ -7,25 +7,36 @@ using Microsoft.EntityFrameworkCore;
 
 using MudBlazor.Services;
 
-using System;
 using System.Security.Claims;
 
-
 var builder = WebApplication.CreateBuilder(args);
+
 Console.WriteLine("ENV=" + builder.Environment.EnvironmentName);
-Console.WriteLine("DefaultConnection=" + builder.Configuration.GetConnectionString("DefaultConnection"));
+
+// Be tolerant: you used both names during the project
+var cs =
+	builder.Configuration.GetConnectionString("DefaultConnection")
+	?? builder.Configuration.GetConnectionString("DefaultConnectionString")
+	?? builder.Configuration.GetConnectionString("Default")
+	?? throw new InvalidOperationException("Missing connection string. Add ConnectionStrings:DefaultConnection to appsettings.json.");
+
+Console.WriteLine("DbConnection=" + cs);
 
 builder.Services.AddRazorComponents()
 	.AddInteractiveServerComponents();
 
 builder.Services.AddMudServices();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-	options.UseSqlServer(
-		builder.Configuration.GetConnectionString("DefaultConnection")));
+//
+// ✅ EF Core (Correct for InteractiveServer / Blazor Web App)
+// Use ONE pooled factory, then create scoped contexts from it.
+//
+builder.Services.AddPooledDbContextFactory<AppDbContext>(options =>
+	options.UseSqlServer(cs));
 
-
-
+// Optional but very useful: allows @inject AppDbContext (scoped) anywhere
+builder.Services.AddScoped<AppDbContext>(sp =>
+	sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
 	.AddCookie(options =>
@@ -37,17 +48,16 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 		options.SlidingExpiration = true;
 	});
 
-
 builder.Services.AddAuthorization();
-
 
 builder.Services.AddHttpContextAccessor();
 
-
+// If you truly need a named HttpClient, you should also register it.
+// Keeping your existing line, but adding the factory registration so it can resolve cleanly.
+builder.Services.AddHttpClient("ServerAPI");
 
 builder.Services.AddScoped(sp =>
 	sp.GetRequiredService<IHttpClientFactory>().CreateClient("ServerAPI"));
-
 
 var app = builder.Build();
 
@@ -58,6 +68,7 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
 	.AddInteractiveServerRenderMode();
+
 app.MapPost("/auth/login", async ( HttpContext http ) =>
 {
 	var form = await http.Request.ReadFormAsync();
@@ -66,9 +77,7 @@ app.MapPost("/auth/login", async ( HttpContext http ) =>
 	var password = form["Password"].ToString();
 
 	if (username != "admin" || password != "password")
-	{
 		return Results.Redirect("/login");
-	}
 
 	var claims = new List<Claim>
 	{
@@ -87,13 +96,11 @@ app.MapPost("/auth/login", async ( HttpContext http ) =>
 
 	return Results.Redirect("/office");
 });
+
 app.MapPost("/auth/logout", async ( HttpContext http ) =>
 {
-	await http.SignOutAsync(
-		CookieAuthenticationDefaults.AuthenticationScheme);
-
+	await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 	return Results.Redirect("/login");
 });
-
 
 app.Run();

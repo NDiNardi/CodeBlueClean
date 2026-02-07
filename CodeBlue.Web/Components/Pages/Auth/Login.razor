@@ -2,30 +2,45 @@
 @layout PublicLayout
 <PageTitle>Login</PageTitle>
 
-<div class="login-container">
-    <h1>CodeBlue</h1>
+<MudContainer MaxWidth="MaxWidth.False" Class="page-gutters page-container">
+    <div class="login-wrap">
+        <MudPaper Elevation="1" Class="action-card login-card">
 
-    <form method="post" action="/auth/login">
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input id="username"
-                   name="Username"
-                   type="text"
-                   required
-                   autocomplete="username" />
-        </div>
+            <div class="login-header">
+                <img src="/images/app/CodeBlueLightMode.png" alt="CodeBlue" class="login-logo" />
+                <MudText Typo="Typo.h5" Class="login-title">Employee Login</MudText>
+                <MudText Typo="Typo.body2" Class="text-secondary">Enter your username and password.</MudText>
+            </div>
 
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input id="password"
-                   name="Password"
-                   type="password"
-                   required
-                   autocomplete="current-password" />
-        </div>
+            <!-- KEEP THIS as a real HTML POST (cookie-safe) -->
+            <form method="post" action="/auth/login">
+                <MudTextField T="string"
+                              Label="Username"
+                              Name="Username"
+                              Required="true"
+                              AutoComplete="username"
+                              FullWidth="true"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense" />
 
-        <button type="submit">
-            Sign In
-        </button>
-    </form>
-</div>
+                <MudTextField T="string"
+                              Label="Password"
+                              Name="Password"
+                              InputType="InputType.Password"
+                              Required="true"
+                              AutoComplete="current-password"
+                              FullWidth="true"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Class="mt-3" />
+
+                <div class="mt-4">
+                    <button type="submit" class="mud-button-root mud-button-filled mud-button-filled-primary mud-button-size-medium mud-ripple cb-login-btn">
+                        <span class="mud-button-label">Sign In</span>
+                    </button>
+                </div>
+            </form>
+
+        </MudPaper>
+    </div>
+</MudContainer>

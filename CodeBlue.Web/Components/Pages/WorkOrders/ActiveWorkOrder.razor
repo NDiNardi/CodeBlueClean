@@ -1,11 +1,566 @@
-﻿@page "/work-orders/active"
+﻿@page "/work-orders/{Id:guid}"
 @layout AuthLayout
 @attribute [Authorize]
 
+@using CodeBlue.Data
+@using CodeBlue.Data.Entities
+@using Microsoft.EntityFrameworkCore
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Nav
+@inject IWebHostEnvironment Env
+
 <PageTitle>Active Work Order</PageTitle>
 
-<h1>Active Work Order</h1>
+<MudContainer MaxWidth="MaxWidth.False" Class="page-gutters">
 
-<p>
-    Editable active work order view.
-</p>
+    <MudPaper Elevation="1" Class="action-card list-card">
+
+        <!-- Header / Complete Button -->
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.BuildCircle" />
+                <MudText Class="cb-page-title">ACTIVE WORK ORDER</MudText>
+            </MudStack>
+
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.ArrowBack"
+                           OnClick="@Back">
+                    Back
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="@(!_canComplete)"
+                           StartIcon="@Icons.Material.Filled.CheckCircle"
+                           OnClick="@CompleteWorkOrder">
+                    Complete Work Order
+                </MudButton>
+            </MudStack>
+        </MudStack>
+
+        <MudDivider Class="my-3" />
+
+        @if (_loading)
+        {
+            <MudStack AlignItems="AlignItems.Center" Class="py-6">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+                <MudText Class="mt-3">Loading work order…</MudText>
+            </MudStack>
+        }
+        else if (_workOrder is null)
+        {
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled">
+                Work order not found.
+            </MudAlert>
+        }
+        else
+        {
+            <!-- 2) Details View -->
+            <MudGrid Spacing="2">
+
+                <MudItem xs="12" md="6">
+                    <MudPaper Variant="Variant.Outlined" Class="pa-3">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Work Order</MudText>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Service Address</div>
+                            <div class="detail-value">@(_workOrder.ServiceAddress ?? _customer?.Address ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Scheduled Date</div>
+                            <div class="detail-value">@(_workOrder.ScheduledServiceDate?.ToString("MM/dd/yyyy") ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value">@(_workOrder.Status ?? "")</div>
+                        </div>
+
+                        @if (_customer is not null)
+                        {
+                            <MudDivider Class="my-3" />
+
+                            <div class="detail-row">
+                                <div class="detail-label">Gate Codes</div>
+                                <div class="detail-value">@(_customer.GateCodes ?? "")</div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-label">Animals Present</div>
+                                <div class="detail-value">@(_customer.AnimalsPresent ? "Yes" : "No")</div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-label">Startup Date</div>
+                                <div class="detail-value">@(_customer.StartupDate?.ToString("MM/dd/yyyy") ?? "")</div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-label">Original Installer/Dealer</div>
+                                <div class="detail-value">@(_customer.OriginalInstallerDealer ?? "")</div>
+                            </div>
+                        }
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudPaper Variant="Variant.Outlined" Class="pa-3">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Contact</MudText>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Name</div>
+                            <div class="detail-value">@(_customer?.ContactName ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Phone</div>
+                            <div class="detail-value">@(_customer?.ContactPhone ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Email</div>
+                            <div class="detail-value">@(_customer?.ContactEmail ?? "")</div>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <!-- Force stacking full-width for max table width -->
+                <MudItem xs="12">
+                    <!-- 3) Claims Table -->
+                    <MudPaper Elevation="0" Variant="Variant.Outlined" Class="pa-3">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+                            <MudText Typo="Typo.h6">Claims</MudText>
+                            <MudText Typo="Typo.caption" Class="text-secondary">
+                                Linked to this work order
+                            </MudText>
+                        </MudStack>
+
+                        <div class="table-scroll">
+                            <MudTable T="WarrantyClaim"
+                                      Dense="true"
+                                      Hover="true"
+                                      Breakpoint="Breakpoint.None"
+                                      Items="_claims">
+                                <HeaderContent>
+                                    <MudTh Class="col-action"></MudTh>
+                                    <MudTh Class="col-address">Service Address</MudTh>
+                                    <MudTh Class="col-comp">Equipment</MudTh>
+                                    <MudTh>Notes</MudTh>
+                                    <MudTh>Serial #1</MudTh>
+                                    <MudTh>Serial #2</MudTh>
+                                </HeaderContent>
+
+                                <RowTemplate>
+                                    <MudTd Class="col-action">
+                                        <MudStack Row="true" Spacing="1">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                           Size="Size.Small"
+                                                           Color="Color.Primary"
+                                                           OnClick="@(() => Nav.NavigateTo($"/claims/{context.Id}"))"
+                                                           AriaLabel="View claim" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Size="Size.Small"
+                                                           Color="Color.Error"
+                                                           OnClick="@(() => ConfirmDeleteClaim(context))"
+                                                           AriaLabel="Delete claim" />
+                                        </MudStack>
+                                    </MudTd>
+
+                                    <MudTd Class="col-address clamp-2">
+                                        <a href="@GetMapsLink(context.Address, context.Street1, context.City, context.State, context.Zip)"
+                                           style="color: inherit; text-decoration: underline;">
+                                            @context.Address
+                                        </a>
+                                    </MudTd>
+
+                                    <!-- TEMP: Equipment Description is stored in ModelNumber for now -->
+                                    <MudTd Class="col-comp clamp-2">@context.ModelNumber</MudTd>
+
+                                    <!-- TEMP: Notes stored in ServiceRequest for now -->
+                                    <MudTd Class="clamp-2">@context.ServiceRequest</MudTd>
+
+                                    <MudTd>
+                                        @if (!string.IsNullOrWhiteSpace(context.Image1Url))
+                                        {
+                                            <a href="@context.Image1Url" target="_blank" rel="noopener">View</a>
+                                        }
+                                    </MudTd>
+
+                                    <MudTd>
+                                        @if (!string.IsNullOrWhiteSpace(context.Image2Url))
+                                        {
+                                            <a href="@context.Image2Url" target="_blank" rel="noopener">View</a>
+                                        }
+                                    </MudTd>
+                                </RowTemplate>
+
+                                <NoRecordsContent>
+                                    <MudText Class="pa-4">No claims linked to this work order.</MudText>
+                                </NoRecordsContent>
+                            </MudTable>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <!-- 4) Add Claim Form -->
+                    <MudPaper Elevation="0" Variant="Variant.Outlined" Class="pa-3">
+                        <MudText Typo="Typo.h6" Class="mb-2">Add a Warranty Claim</MudText>
+
+                        <MudForm @ref="_form">
+                            <MudGrid Class="mt-1" Spacing="2">
+
+                                <MudItem xs="12">
+                                    <MudTextField Label="Equipment Description *"
+                                                  @bind-Value="_newEquipmentDescription"
+                                                  Required="true"
+                                                  Immediate="true" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="6">
+                                    <MudDatePicker Label="Repaired On *"
+                                                   @bind-Date="_newRepairedOn"
+                                                   Required="true" />
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudTextField Label="Notes (office will copy to Hayward website) *"
+                                                  @bind-Value="_newNotes"
+                                                  Lines="4"
+                                                  Required="true" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="6">
+                                    <MudText Typo="Typo.subtitle2" Class="mb-1">Serial #1 (photo)</MudText>
+                                    <InputFile OnChange="OnSerial1Selected" accept="image/*" />
+                                    @if (!string.IsNullOrWhiteSpace(_serial1Name))
+                                    {
+                                        <MudText Typo="Typo.caption" Class="text-secondary mt-1">@_serial1Name</MudText>
+                                    }
+                                </MudItem>
+
+                                <MudItem xs="12" sm="6">
+                                    <MudText Typo="Typo.subtitle2" Class="mb-1">Serial #2 (photo)</MudText>
+                                    <InputFile OnChange="OnSerial2Selected" accept="image/*" />
+                                    @if (!string.IsNullOrWhiteSpace(_serial2Name))
+                                    {
+                                        <MudText Typo="Typo.caption" Class="text-secondary mt-1">@_serial2Name</MudText>
+                                    }
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudButton Variant="Variant.Filled"
+                                               Color="Color.Primary"
+                                               Disabled="@_saving"
+                                               OnClick="@AddClaim">
+                                        @(_saving ? "Adding..." : "Add Claim")
+                                    </MudButton>
+                                </MudItem>
+
+                            </MudGrid>
+                        </MudForm>
+                    </MudPaper>
+                </MudItem>
+
+            </MudGrid>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private bool _loading = true;
+    private bool _saving = false;
+
+    private WorkOrder? _workOrder;
+    private Customer? _customer;
+    private List<WarrantyClaim> _claims = new();
+
+    private MudForm? _form;
+
+    // Add-claim form fields
+    private string _newEquipmentDescription = "";
+    private string _newNotes = "";
+    private DateTime? _newRepairedOn = DateTime.Today;
+
+    private IBrowserFile? _serial1File;
+    private IBrowserFile? _serial2File;
+    private string? _serial1Name;
+    private string? _serial2Name;
+
+    private bool _canComplete => _workOrder is not null && !string.Equals(_workOrder.Status, "Completed", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        _workOrder = await db.WorkOrders
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == Id);
+
+        if (_workOrder is not null)
+        {
+            if (_workOrder.CustomerId is not null)
+            {
+                _customer = await db.Customers
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Id == _workOrder.CustomerId);
+            }
+
+            _claims = await db.WarrantyClaims
+                .AsNoTracking()
+                .Where(c => c.WorkOrderId == Id)
+                .OrderByDescending(c => c.FailureDate)
+                .ThenByDescending(c => c.ClaimNumber)
+                .Take(200)
+                .ToListAsync();
+        }
+
+        _loading = false;
+    }
+
+    private void Back() => Nav.NavigateTo("/work-orders");
+
+    private string GetMapsLink( string? address, string? street1, string? city, string? state, string? zip )
+    {
+        var q = !string.IsNullOrWhiteSpace(address)
+            ? address
+            : $"{street1} {city}, {state} {zip}".Trim();
+
+        return "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(q);
+    }
+
+    private void OnSerial1Selected( InputFileChangeEventArgs e )
+    {
+        _serial1File = e.File;
+        _serial1Name = e.File?.Name;
+    }
+
+    private void OnSerial2Selected( InputFileChangeEventArgs e )
+    {
+        _serial2File = e.File;
+        _serial2Name = e.File?.Name;
+    }
+
+    private async Task AddClaim()
+    {
+        if (_workOrder is null)
+            return;
+
+        if (_form is null)
+            return;
+
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+
+        try
+        {
+            await using var db = await DbFactory.CreateDbContextAsync();
+
+            var claimId = Guid.NewGuid();
+
+            // Copy data from WorkOrder/Customer -> Claim on creation (your #1)
+            var claim = new WarrantyClaim
+            {
+                Id = claimId,
+                WorkOrderId = _workOrder.Id,
+                CustomerId = _workOrder.CustomerId,
+
+                // Address fields (prefer customer, fall back to work order address string)
+                Address = _customer?.Address ?? _workOrder.ServiceAddress ?? "",
+                Street1 = _customer?.Street1 ?? "",
+                Street2 = _customer?.Street2,
+                City = _customer?.City ?? "",
+                State = _customer?.State ?? "",
+                Zip = _customer?.Zip ?? "",
+                Country = _customer?.Country,
+
+                AddressKey = _customer?.AddressKey ?? "",
+
+                OriginalInstallerDealer = _customer?.OriginalInstallerDealer,
+                // Using customer's StartupDate as the "system install/startup" basis
+                OriginalInstallationDate = _customer?.StartupDate,
+
+                // Your process defaults
+                Status = "New",
+
+                // Failure date: ideally WorkOrder.DateSubmitted; if not available, use today
+                FailureDate = DateOnly.FromDateTime(DateTime.Today),
+
+                // Repaired On (your requested field)
+                RepairDate = _newRepairedOn is null ? null : DateOnly.FromDateTime(_newRepairedOn.Value),
+
+                // TEMP mappings:
+                // - Equipment Description stored in ModelNumber for now (helper text)
+                ModelNumber = _newEquipmentDescription?.Trim(),
+
+                // - Notes stored in ServiceRequest for now
+                ServiceRequest = _newNotes?.Trim(),
+            };
+
+            // Save serial images (tech-entered #2)
+            if (_serial1File is not null)
+            {
+                var url = await SaveClaimImage(claimId, _serial1File, "serial1");
+                claim.Image1Url = url;
+                claim.Image1 = Path.GetFileName(url);
+            }
+
+            if (_serial2File is not null)
+            {
+                var url = await SaveClaimImage(claimId, _serial2File, "serial2");
+                claim.Image2Url = url;
+                claim.Image2 = Path.GetFileName(url);
+            }
+
+            db.WarrantyClaims.Add(claim);
+            await db.SaveChangesAsync();
+
+            // Refresh list
+            _claims.Insert(0, claim);
+
+            // Reset form
+            _newEquipmentDescription = "";
+            _newNotes = "";
+            _newRepairedOn = DateTime.Today;
+            _serial1File = null;
+            _serial2File = null;
+            _serial1Name = null;
+            _serial2Name = null;
+
+            await InvokeAsync(StateHasChanged);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task<string> SaveClaimImage( Guid claimId, IBrowserFile file, string prefix )
+    {
+        // wwwroot/uploads/claims/{claimId}/prefix_yyyyMMdd_HHmmss.ext
+        var ext = Path.GetExtension(file.Name);
+        if (string.IsNullOrWhiteSpace(ext))
+            ext = ".jpg";
+
+        var safeExt = ext.Length > 10 ? ".jpg" : ext;
+
+        var relDir = Path.Combine("uploads", "claims", claimId.ToString("N"));
+        var absDir = Path.Combine(Env.WebRootPath, relDir);
+        Directory.CreateDirectory(absDir);
+
+        var filename = $"{prefix}_{DateTime.Now:yyyyMMdd_HHmmss}{safeExt}";
+        var absPath = Path.Combine(absDir, filename);
+
+        await using var fs = File.Create(absPath);
+        await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(fs);
+
+        // Return URL path
+        return "/" + relDir.Replace("\\", "/") + "/" + filename;
+    }
+
+    private async Task CompleteWorkOrder()
+    {
+        if (_workOrder is null)
+            return;
+
+        var userName = await GetCurrentUserName();
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        var wo = await db.WorkOrders.FirstOrDefaultAsync(x => x.Id == _workOrder.Id);
+        if (wo is null)
+            return;
+
+        // Set your completed state; add more fields if your entity has them
+        wo.Status = "Completed";
+
+        // If your WorkOrder entity has fields like DateCompleted / CompletedBy, uncomment after verifying names:
+        // wo.DateCompleted = DateOnly.FromDateTime(DateTime.Today);
+        // wo.CompletedBy = userName;
+
+        // Also stamp CompletedBy onto claims if you want (your #2):
+        var claims = await db.WarrantyClaims.Where(c => c.WorkOrderId == wo.Id).ToListAsync();
+        foreach (var c in claims)
+        {
+            c.CompletedBy = userName;
+        }
+
+        await db.SaveChangesAsync();
+
+        // Refresh local
+        _workOrder = wo;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task<string?> GetCurrentUserName()
+    {
+        if (AuthStateTask is null)
+            return null;
+
+        var auth = await AuthStateTask;
+        var user = auth.User;
+
+        if (user?.Identity?.IsAuthenticated != true)
+            return null;
+
+        // Prefer Name; you can swap to email claim if you like later
+        return user.Identity?.Name;
+    }
+
+    private void ConfirmDeleteClaim( WarrantyClaim claim )
+    {
+        _pendingDelete = claim;
+        _deleteDialogOpen = true;
+    }
+
+    private WarrantyClaim? _pendingDelete;
+    private bool _deleteDialogOpen;
+
+    private async Task DeleteClaimConfirmed()
+    {
+        if (_pendingDelete is null)
+            return;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        var c = await db.WarrantyClaims.FirstOrDefaultAsync(x => x.Id == _pendingDelete.Id);
+        if (c is not null)
+        {
+            db.WarrantyClaims.Remove(c);
+            await db.SaveChangesAsync();
+        }
+
+        _claims.RemoveAll(x => x.Id == _pendingDelete.Id);
+        _pendingDelete = null;
+        _deleteDialogOpen = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+}
+
+<MudDialog @bind-IsVisible="_deleteDialogOpen">
+    <DialogContent>
+        <MudText Typo="Typo.subtitle1">Delete this claim?</MudText>
+        <MudText Typo="Typo.body2" Class="text-secondary mt-2">
+            This will permanently remove the claim record.
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined" OnClick="@(() => _deleteDialogOpen = false)">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="@DeleteClaimConfirmed">Delete</MudButton>
+    </DialogActions>
+</MudDialog>

@@ -4,142 +4,168 @@
 
 <PageTitle>Request Service</PageTitle>
 
-<MudPaper Class="pa-6" MaxWidth="900px" Style="margin: 24px auto;">
-    <MudText Typo="Typo.h4" GutterBottom>REQUEST FOR SERVICE</MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="page-gutters page-container">
+    <MudPaper Elevation="1" Class="action-card list-card">
 
-    <MudForm @ref="_form">
+        <MudText Typo="Typo.h5" Class="mb-2">
+            REQUEST FOR SERVICE
+        </MudText>
 
-        <!-- 1. Service Location -->
-        <MudText Typo="Typo.h6" Class="mt-4">1. Service Location</MudText>
+        <MudForm @ref="_form">
 
-        <MudGrid Class="mt-2">
-            <MudItem xs="12">
-                <MudTextField Label="Street Address *"
-                              @bind-Value="_model.Street1"
-                              Required="true" />
-            </MudItem>
+            <!-- ===============================
+                 1. SERVICE LOCATION
+                 =============================== -->
+            <MudText Typo="Typo.h6" Class="mt-2">
+                1. Service Location
+            </MudText>
 
-            <MudItem xs="12">
-                <MudTextField Label="Street Address 2"
-                              @bind-Value="_model.Street2" />
-            </MudItem>
+            <MudGrid Class="mt-2">
 
-            <MudItem xs="12" sm="6">
-                <MudTextField Label="City *"
-                              @bind-Value="_model.City"
-                              Required="true" />
-            </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Street Address *"
+                                  @bind-Value="_model.Street1"
+                                  Required="true" />
+                </MudItem>
 
-            <MudItem xs="12" sm="3">
-                <MudTextField Label="State *"
-                              @bind-Value="_model.State"
-                              Required="true" />
-            </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Street Address 2"
+                                  @bind-Value="_model.Street2" />
+                </MudItem>
 
-            <MudItem xs="12" sm="3">
-                <MudTextField Label="Zip *"
-                              @bind-Value="_model.Zip"
-                              Required="true" />
-            </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="City *"
+                                  @bind-Value="_model.City"
+                                  Required="true" />
+                </MudItem>
 
-            <MudItem xs="12">
-                <MudText Typo="Typo.subtitle2" Class="mt-2">Who can we contact to schedule the service? *</MudText>
-            </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField Label="State *"
+                                  @bind-Value="_model.State"
+                                  Required="true" />
+                </MudItem>
 
-            <MudItem xs="12" sm="6">
-                <MudTextField Label="First *"
-                              @bind-Value="_model.ServiceContactFirst"
-                              Required="true" />
-            </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField Label="Zip *"
+                                  @bind-Value="_model.Zip"
+                                  Required="true" />
+                </MudItem>
 
-            <MudItem xs="12" sm="6">
-                <MudTextField Label="Last *"
-                              @bind-Value="_model.ServiceContactLast"
-                              Required="true" />
-            </MudItem>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" Class="mt-2">
+                        Who can we contact to schedule the service? *
+                    </MudText>
+                </MudItem>
 
-            <MudItem xs="12">
-                <MudTextField Label="Phone Number *"
-                              @bind-Value="_model.ServiceContactPhone"
-                              Required="true" />
-            </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="First *"
+                                  @bind-Value="_model.ServiceContactFirst"
+                                  Required="true" />
+                </MudItem>
 
-            <MudItem xs="12">
-                <MudTextField Label="Gate Code(s)"
-                              @bind-Value="_model.GateCodes" />
-            </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Last *"
+                                  @bind-Value="_model.ServiceContactLast"
+                                  Required="true" />
+                </MudItem>
 
-            <MudItem xs="12">
-                <MudSelect T="YesNo" Label="Are there any animals that will need placed inside during the call? *"
-                           @bind-Value="_model.AnimalsPresent"
-                           Required="true">
-                    <MudSelectItem Value="YesNo.Yes">Yes</MudSelectItem>
-                    <MudSelectItem Value="YesNo.No">No</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-        </MudGrid>
+                <MudItem xs="12">
+                    <MudTextField Label="Phone Number *"
+                                  @bind-Value="_model.ServiceContactPhone"
+                                  Required="true" />
+                </MudItem>
 
-        <MudDivider Class="my-6" />
+                <MudItem xs="12">
+                    <MudTextField Label="Gate Code(s)"
+                                  @bind-Value="_model.GateCodes" />
+                </MudItem>
 
-        <!-- 2. Builder / Equipment Information -->
-        <MudText Typo="Typo.h6">2. Builder / Equipment Information</MudText>
+                <MudItem xs="12">
+                    <MudSelect T="YesNo"
+                               Label="Are there any animals that will need placed inside during the call? *"
+                               @bind-Value="_model.AnimalsPresent"
+                               Required="true">
+                        <MudSelectItem Value="YesNo.Yes">Yes</MudSelectItem>
+                        <MudSelectItem Value="YesNo.No">No</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
 
-        <MudGrid Class="mt-2">
-            <MudItem xs="12">
-                <MudTextField Label="Company Name *"
-                              @bind-Value="_model.BuilderCompanyName"
-                              Required="true" />
-            </MudItem>
+            </MudGrid>
 
-            <MudItem xs="12">
-                <MudText Typo="Typo.subtitle2" Class="mt-2">Your Contact Information *</MudText>
-            </MudItem>
+            <MudDivider Class="my-4" />
 
-            <MudItem xs="12" sm="6">
-                <MudTextField Label="First *"
-                              @bind-Value="_model.BuilderContactFirst"
-                              Required="true" />
-            </MudItem>
+            <!-- ===============================
+                 2. BUILDER / EQUIPMENT INFO
+                 =============================== -->
+            <MudText Typo="Typo.h6">
+                2. Builder / Equipment Information
+            </MudText>
 
-            <MudItem xs="12" sm="6">
-                <MudTextField Label="Last *"
-                              @bind-Value="_model.BuilderContactLast"
-                              Required="true" />
-            </MudItem>
+            <MudGrid Class="mt-2">
 
-            <MudItem xs="12">
-                <MudTextField Label="Your Phone Number *"
-                              @bind-Value="_model.BuilderPhone"
-                              Required="true" />
-            </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Company Name *"
+                                  @bind-Value="_model.BuilderCompanyName"
+                                  Required="true" />
+                </MudItem>
 
-            <MudItem xs="12">
-                <MudTextField Label="Your E-mail (optional)"
-                              @bind-Value="_model.BuilderEmail" />
-            </MudItem>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" Class="mt-2">
+                        Your Contact Information *
+                    </MudText>
+                </MudItem>
 
-            <MudItem xs="12" sm="6">
-                <MudDatePicker Label="System Startup / Installation Date *"
-                               @bind-Date="_model.InstallDate"
-                               Required="true" />
-            </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="First *"
+                                  @bind-Value="_model.BuilderContactFirst"
+                                  Required="true" />
+                </MudItem>
 
-            <MudItem xs="12">
-                <MudTextField Label="Provide a brief description of the problem needing attention. *"
-                              @bind-Value="_model.ProblemDescription"
-                              Lines="4"
-                              Required="true" />
-            </MudItem>
-        </MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Last *"
+                                  @bind-Value="_model.BuilderContactLast"
+                                  Required="true" />
+                </MudItem>
 
-        <MudStack Row="true" Justify="Justify.FlexStart" Class="mt-6">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit">
-                Submit
-            </MudButton>
-        </MudStack>
+                <MudItem xs="12">
+                    <MudTextField Label="Your Phone Number *"
+                                  @bind-Value="_model.BuilderPhone"
+                                  Required="true" />
+                </MudItem>
 
-    </MudForm>
-</MudPaper>
+                <MudItem xs="12">
+                    <MudTextField Label="Your E-mail (optional)"
+                                  @bind-Value="_model.BuilderEmail" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="System Startup / Installation Date *"
+                                   @bind-Date="_model.InstallDate"
+                                   Required="true" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField Label="Provide a brief description of the problem needing attention. *"
+                                  @bind-Value="_model.ProblemDescription"
+                                  Lines="4"
+                                  Required="true" />
+                </MudItem>
+
+            </MudGrid>
+
+            <MudStack Row="true" Justify="Justify.FlexStart" Class="mt-4">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="Submit">
+                    Submit
+                </MudButton>
+            </MudStack>
+
+        </MudForm>
+
+    </MudPaper>
+
+</MudContainer>
 
 @code {
     private MudForm? _form;
@@ -149,12 +175,13 @@
     {
         if (_form is null)
             return;
+
         await _form.Validate();
 
         if (!_form.IsValid)
             return;
 
-        // UI-only: no DB / no API yet.
+        // UI-only for now
         Nav.NavigateTo("/request-submitted");
     }
 

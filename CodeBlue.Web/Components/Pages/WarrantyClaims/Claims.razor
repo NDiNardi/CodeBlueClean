@@ -1,0 +1,180 @@
+﻿@page "/claims"
+@layout AuthLayout
+@attribute [Authorize]
+
+@using CodeBlue.Data
+@using CodeBlue.Data.Entities
+@using Microsoft.EntityFrameworkCore
+@using MudBlazor
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Nav
+
+<PageTitle>Claims</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="page-gutters page-container">
+
+    <MudPaper Elevation="1" Class="list-card action-card">
+
+        <MudText Class="cb-page-title mb-2">Warranty Claims</MudText>
+
+        <MudTextField T="string"
+                      @bind-Value="_search"
+                      Placeholder="Search (Claim # / Address / AddressKey / Serial / Model)"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true"
+                      DebounceInterval="250"
+                      OnDebounceIntervalElapsed="Reload"
+                      FullWidth="true"
+                      Class="mb-3" />
+
+        <div class="table-scroll">
+
+            <MudTable T="WarrantyClaim"
+                      Dense="true"
+                      Hover="true"
+                      Breakpoint="Breakpoint.None"
+                      ServerData="LoadClaims"
+                      @ref="_table"
+                      RowsPerPage="25">
+
+                <HeaderContent>
+                    <MudTh Class="col-action"></MudTh>
+                    <MudTh Class="col-address">Service Address</MudTh>
+                    <MudTh Class="col-comp">Equipment</MudTh>
+                    <MudTh>Notes</MudTh>
+                    <MudTh>Serial #</MudTh>
+                    <MudTh>Serial #2</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd Class="col-action">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                       Size="Size.Small"
+                                       Color="Color.Primary"
+                                       OnClick="@(() => Nav.NavigateTo($"/claims/{context.Id}"))"
+                                       AriaLabel="View claim" />
+                    </MudTd>
+
+                    <MudTd Class="col-address list-address clamp-2">
+                        <a href="@GetMapsLink(
+                                                 context.Address,
+                                                 context.Street1,
+                                                 context.City,
+                                                 context.State,
+                                                 context.Zip)"
+                           style="color: inherit; text-decoration: underline;">
+                            @context.Address
+                        </a>
+                    </MudTd>
+
+                    <MudTd Class="col-comp clamp-2">
+                        @if (!string.IsNullOrWhiteSpace(context.ModelNumber))
+                        {
+                            <div>@context.ModelNumber</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(context.ComponentCode))
+                        {
+                            <div class="text-secondary">@context.ComponentCode</div>
+                        }
+                    </MudTd>
+
+
+                    <MudTd Class="clamp-2">
+                        @context.ServiceRequest
+                    </MudTd>
+
+                    <MudTd>
+                        @context.IdSerialNumber
+                    </MudTd>
+
+                    <MudTd>
+                        @context.ComponentSerialNumber
+                    </MudTd>
+                </RowTemplate>
+
+
+
+
+                <NoRecordsContent>
+                    <MudText Class="pa-4">No claims found.</MudText>
+                </NoRecordsContent>
+
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+
+            </MudTable>
+
+        </div>
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    private MudTable<WarrantyClaim>? _table;
+    private string _search = "";
+
+    private string GetMapsLink( string? address )
+    => GetMapsLink(address, null, null, null, null);
+
+
+    private string GetMapsLink( string? address, string? street1, string? city, string? state, string? zip )
+    {
+        var q = !string.IsNullOrWhiteSpace(address)
+            ? address
+            : $"{street1} {city}, {state} {zip}".Trim();
+
+        return "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(q);
+    }
+
+    private Task Reload()
+        => _table?.ReloadServerData() ?? Task.CompletedTask;
+
+    private async Task<TableData<WarrantyClaim>> LoadClaims( TableState state, CancellationToken ct )
+    {
+        await using var db = await DbFactory.CreateDbContextAsync(ct);
+
+        IQueryable<WarrantyClaim> q = db.WarrantyClaims.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(_search))
+        {
+            var s = _search.Trim();
+
+            q = q.Where(x =>
+                (x.ClaimNumber != null && EF.Functions.Like(x.ClaimNumber, $"%{s}%")) ||
+                (x.Address != null && EF.Functions.Like(x.Address, $"%{s}%")) ||
+                (x.AddressKey != null && EF.Functions.Like(x.AddressKey, $"%{s}%")) ||
+                (x.IdSerialNumber != null && EF.Functions.Like(x.IdSerialNumber, $"%{s}%")) ||
+                (x.ComponentSerialNumber != null && EF.Functions.Like(x.ComponentSerialNumber, $"%{s}%")) ||
+                (x.ModelNumber != null && EF.Functions.Like(x.ModelNumber, $"%{s}%")) ||
+                (x.ComponentCode != null && EF.Functions.Like(x.ComponentCode, $"%{s}%"))
+            );
+        }
+
+        q = q.OrderByDescending(x => x.FailureDate)
+             .ThenByDescending(x => x.ClaimNumber);
+
+        var total = await q.CountAsync(ct);
+
+        var items = await q
+            .Skip(state.Page * state.PageSize)
+            .Take(state.PageSize)
+            .ToListAsync(ct);
+
+        return new TableData<WarrantyClaim>
+        {
+            TotalItems = total,
+            Items = items
+        };
+    }
+
+    
+
+    private void ViewClaim( Guid id )
+    {
+        Nav.NavigateTo($"/claims/{id}");
+    }
+}

@@ -1,3 +1,78 @@
+﻿/* =================================================
+   CODEBLUE GLOBAL CSS (ONE FILE)
+   Tokens control mobile vs desktop behavior.
+   ================================================= */
+
+/* =================================================
+   0) TOKENS (DESKTOP DEFAULTS)
+   ================================================= */
+:root {
+    /* ---------- LAYOUT ---------- */
+    --page-content-max: 78vw; /* tweak this */
+    --page-content-cap: 1200px; /* hard cap so ultrawide doesn't get silly*/
+    --page-max-width: 1200px;
+    --page-gutter-desktop: 30px;
+    --page-gutter-mobile: 5px;
+    /* ---------- CARD ---------- */
+    --card-radius: 8px;
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --list-card-pad-desktop: 22px;
+    --list-card-max-width: 900px; /* hard cap */
+    --list-card-width-desktop: 78%;
+    /* ---------- TABLE ---------- */
+    --table-min-width-desktop: 1100px;
+    --table-min-width-mobile: 760px;
+    /* ---------- LIST “CORE” COLUMN WIDTHS ---------- */
+    --col-action: 30px; /* eyeball */
+    --col-claim: 86px; /* W1372108 */
+    --col-address: 220px; /* visible on mobile */
+    --col-component: 120px; /* component code */
+    /* ---------- TYPO ---------- */
+    --page-title-size: 32px;
+    --page-title-size-mobile: 22px;
+    /* ---------- COLORS ---------- */
+    --color-text-secondary: rgba(0, 0, 0, 0.6);
+    /* ---------- BACKGROUND ---------- */
+    --bg-overlay-light: rgba(0, 0, 0, 0.28);
+    --bg-overlay-dark: rgba(0, 0, 0, 0.10);
+    --bg-image-url: url("/images/app/background.png");
+    /* ---------- BUTTON (OPTIONAL) ---------- */
+    --button-radius: 6px;
+    --button-gradient: linear-gradient(180deg, #ffcc33, #ffb600);
+    --color-button-text: #000;
+}
+
+/* =================================================
+   0b) TOKENS (MOBILE OVERRIDES)
+   ================================================= */
+@media (max-width: 600px) {
+    :root {
+        --page-gutter-mobile: 5px;
+        --list-card-pad-mobile: 4px;
+        
+        /* tighten core columns */
+        --col-action: 28px;
+        --col-claim: 82px;
+        --col-address: 200px;
+        --col-component: 110px;
+        --page-title-size-mobile: 20px;
+        /* allow scroll sooner while keeping core columns visible */
+        --table-min-width-mobile: 720px;
+    }
+}
+
+@media (min-width: 960px) {
+    .list-card {
+        width: var(--list-card-width-desktop) !important;
+        max-width: var(--list-card-max-width) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+}
+
+/* =================================================
+   1) BASE (from default app.css)
+   ================================================= */
 html, body {
     margin: 0;
     padding: 0;
@@ -41,18 +116,25 @@ html, body {
     min-height: 100vh;
 }
 
-/* App-level full-bleed background */
+/* =================================================
+   2) FULL-BLEED BACKGROUND
+   ================================================= */
 .app-background {
     min-height: 100vh;
     width: 100%;
     display: flex;
     flex-direction: column;
-    background-image: linear-gradient( rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.25) ), url("/images/app/background.png");
+    background-image: linear-gradient(var(--bg-overlay-light), var(--bg-overlay-light)), var(--bg-image-url);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
 }
 
+html[data-theme="dark"] .app-background {
+    background-image: linear-gradient(var(--bg-overlay-dark), var(--bg-overlay-dark)), var(--bg-image-url);
+}
+
+/* Public layout container */
 .public-layout {
     min-height: 100vh;
     width: 100%;
@@ -60,9 +142,315 @@ html, body {
     flex-direction: column;
 }
 
-
 .public-main {
     padding: 16px;
 }
 
+/* =================================================
+   3) GLOBAL CARDS
+   ================================================= */
+.action-card {
+    width: 100%;
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    overflow: hidden; /* prevents table bleed past rounded corners */
+}
 
+    .action-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+.text-secondary {
+    color: var(--color-text-secondary);
+}
+
+/* List-card padding controller (use on MudPaper) */
+.list-card {
+    width: 100%;
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    padding: var(--list-card-pad-mobile) !important;
+}
+
+@media (min-width: 960px) {
+    .list-card {
+        padding: var(--list-card-pad-desktop) !important;
+    }
+}
+
+/* =================================================
+   4) GLOBAL PAGE GUTTERS (use on MudContainer)
+   ================================================= */
+.page-container {
+    width: 100%;
+    max-width: min(var(--page-content-max), var(--page-content-cap));
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@media (max-width: 960px) {
+    .page-container {
+        max-width: 100%;
+    }
+}
+
+.page-gutters {
+    padding-left: var(--page-gutter-mobile);
+    padding-right: var(--page-gutter-mobile);
+}
+
+@media (min-width: 960px) {
+    .page-gutters {
+        padding-left: var(--page-gutter-desktop);
+        padding-right: var(--page-gutter-desktop);
+    }
+}
+
+/* =================================================
+   5) PAGE TITLES (single-line on mobile)
+   ================================================= */
+.cb-page-title {
+    font-size: var(--page-title-size);
+    line-height: 1.1;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+    .cb-page-title {
+        font-size: var(--page-title-size-mobile);
+    }
+}
+
+/* =================================================
+   6) TABLE SCROLLING (LIST PAGES)
+   ================================================= */
+.table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+    /* wide table so extra columns scroll */
+    .table-scroll .mud-table {
+        min-width: var(--table-min-width-desktop);
+    }
+
+@media (max-width: 600px) {
+    .table-scroll .mud-table {
+        min-width: var(--table-min-width-mobile);
+    }
+}
+
+/* default: no wrapping (we override address) */
+.table-scroll .mud-table th,
+.table-scroll .mud-table td {
+    white-space: nowrap;
+    vertical-align: top;
+}
+
+/* =================================================
+   7) CORE LIST COLUMN WIDTHS
+   ================================================= */
+/* Eyeball column */
+.mud-table th.col-action,
+.mud-table td.col-action {
+    width: var(--col-action);
+    min-width: var(--col-action);
+    max-width: var(--col-action);
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    text-align: center;
+}
+
+    /* Shrink MudIconButton padding/box inside action column */
+    .mud-table td.col-action .mud-icon-button,
+    .mud-table th.col-action .mud-icon-button {
+        padding: 0 !important;
+        width: var(--col-action) !important;
+        height: var(--col-action) !important;
+        min-width: var(--col-action) !important;
+    }
+
+/* Claim # */
+.mud-table th.col-claim,
+.mud-table td.col-claim {
+    width: var(--col-claim);
+    min-width: var(--col-claim);
+    max-width: var(--col-claim);
+}
+
+/* Component */
+.mud-table th.col-comp,
+.mud-table td.col-comp {
+    width: var(--col-component);
+    min-width: var(--col-component);
+    max-width: var(--col-component);
+}
+
+/* Address: wrap + clamp */
+.mud-table th.col-address,
+.mud-table td.col-address {
+    width: var(--col-address);
+    min-width: var(--col-address);
+    max-width: var(--col-address);
+    white-space: normal !important;
+}
+
+/* 2-line clamp for list address */
+.list-address {
+    white-space: normal !important;
+}
+
+    .list-address.clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+/* Optional helper clamps */
+.clamp-1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* =================================================
+   8) OPTIONAL: CodeBlue yellow button utility
+   ================================================= */
+.cb-button {
+    background: var(--button-gradient);
+    color: var(--color-button-text);
+    font-weight: 600;
+    border-radius: var(--button-radius);
+    padding: 6px 10px;
+    border: none;
+}
+
+    .cb-button:hover {
+        filter: brightness(0.98);
+    }
+
+/* =================================================
+   9) NAV BAR (white bar + black content + reliable shadow)
+   ================================================= */
+.cb-appbar,
+.cb-topbar {
+    background-color: #fff !important;
+    color: #000 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+    /* force icons/buttons/links black */
+    .cb-appbar .mud-icon-root,
+    .cb-topbar .mud-icon-root,
+    .cb-appbar button,
+    .cb-topbar button,
+    .cb-appbar a,
+    .cb-topbar a {
+        color: #000 !important;
+    }
+
+.cb-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700; /* 600 if you want slightly lighter */
+    letter-spacing: 0.00em; /* key to the logo look */
+    text-transform: uppercase;
+    
+    font-size: 1.6rem; /* 👈 THIS is the main control */
+    line-height: 1; /* keeps it vertically tight */
+}
+
+/* logo + title row */
+.cb-brand {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+}
+
+.cb-logo {
+    width: 75px;
+    height: 50px;
+    display: inline-block;
+    flex: 0 0 auto;
+    margin: 0;
+   
+}
+
+/* small space between appbar and page content */
+.main-content {
+    margin-top: 12px;
+}
+
+/* 1) Force the appbar to truly stay pinned */
+.cb-appbar {
+    position: sticky; /* MudAppBar fixed should handle it, this makes it bulletproof */
+    top: 0;
+    z-index: 1300; /* above content + tables */
+    width: 100%;
+}
+
+/* 2) Make sure the page (not some wrapper) is the thing that scrolls */
+html, body {
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* 3) Prevent your background wrapper from becoming the scroller */
+.app-background {
+    min-height: 100vh;
+    overflow: visible; /* IMPORTANT: don't let it scroll itself */
+}
+
+/* 4) Push content below the bar */
+:root {
+    --cb-appbar-height: 56px; /* bump to 64px if you make logo bigger */
+}
+
+.main-content {
+    padding-top: var(--cb-appbar-height);
+}
+
+
+
+/*----------login------------*/
+.login-wrap {
+    display: flex;
+    justify-content: center;
+    padding-top: 64px;
+    padding-bottom: 64px;
+}
+
+.login-card {
+    max-width: 520px;
+    width: 100%;
+    padding: 24px !important;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.login-logo {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    margin-bottom: 8px;
+}
+
+.login-title {
+    margin-bottom: 4px;
+}
+
+.cb-login-btn {
+    width: 100%;
+}

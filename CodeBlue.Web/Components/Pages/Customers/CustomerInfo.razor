@@ -1,11 +1,269 @@
-﻿@page "/customers/view"
+﻿@page "/customers/{Id:guid}"
 @layout AuthLayout
 @attribute [Authorize]
 
-<PageTitle>Customer Info</PageTitle>
+@using CodeBlue.Data
+@using CodeBlue.Data.Entities
+@using Microsoft.EntityFrameworkCore
+@using MudBlazor
 
-<h1>Customer Info</h1>
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Nav
 
-<p>
-    Customer details and history.
-</p>
+<PageTitle>Customer</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="page-gutters page-container">
+
+    <MudPaper Elevation="1" Class="action-card list-card">
+
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.Home" />
+                <MudText Class="cb-page-title mb-2">Customer</MudText>
+            </MudStack>
+
+            <MudButton Variant="Variant.Outlined"
+                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@BackToList">
+                Back to Customers
+            </MudButton>
+        </MudStack>
+
+        @if (_loading)
+        {
+            <MudDivider Class="my-3" />
+            <MudStack AlignItems="AlignItems.Center" Class="py-6">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+                <MudText Class="mt-3">Loading customer…</MudText>
+            </MudStack>
+        }
+        else if (_customer is null)
+        {
+            <MudDivider Class="my-3" />
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled">
+                Customer not found.
+            </MudAlert>
+        }
+        else
+        {
+            <MudDivider Class="my-3" />
+
+            <MudGrid Spacing="2">
+
+                <!-- SITE -->
+                <MudItem xs="12" md="6">
+                    <MudPaper Variant="Variant.Outlined" Class="pa-3">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Site</MudText>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Address</div>
+                            <div class="detail-value">@(_customer.Address ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">AddressKey</div>
+                            <div class="detail-value">@(_customer.AddressKey ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">City</div>
+                            <div class="detail-value">@(_customer.City ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">State</div>
+                            <div class="detail-value">@(_customer.State ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Zip</div>
+                            <div class="detail-value">@(_customer.Zip ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Startup Date</div>
+                            <div class="detail-value">@(_customer.StartupDate?.ToString("MM/dd/yyyy") ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value">@(_customer.Status ?? "")</div>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <!-- CONTACT / ACCESS -->
+                <MudItem xs="12" md="6">
+                    <MudPaper Variant="Variant.Outlined" Class="pa-3">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Contact / Access</MudText>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Contact Name</div>
+                            <div class="detail-value">@(_customer.ContactName ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Contact Phone</div>
+                            <div class="detail-value">@(_customer.ContactPhone ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Contact Email</div>
+                            <div class="detail-value">@(_customer.ContactEmail ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Gate Codes</div>
+                            <div class="detail-value">@(_customer.GateCodes ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Animals Present</div>
+                            <div class="detail-value">@(_customer.AnimalsPresent ? "Yes" : "No")</div>
+                        </div>
+
+                        <MudDivider Class="my-3" />
+
+                        <div class="detail-row">
+                            <div class="detail-label">Installer/Dealer</div>
+                            <div class="detail-value">@(_customer.OriginalInstallerDealer ?? "")</div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Original Install Date</div>
+                            <div class="detail-value">@(_customer.StartupDate?.ToString("MM/dd/yyyy") ?? "")</div>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <!-- LINKED CLAIMS + WORK ORDERS (ALWAYS STACKED) -->
+                <MudItem xs="12" md="12">
+                    <MudStack Spacing="2">
+
+                        <!-- Linked Claims -->
+                        <MudPaper Elevation="1" Class="action-card list-card">
+                            <MudText Typo="Typo.h6" Class="mb-2">Linked Claims</MudText>
+
+                            <div class="table-scroll">
+                                <MudTable T="WarrantyClaim"
+                                          Dense="true"
+                                          Hover="true"
+                                          Breakpoint="Breakpoint.None"
+                                          Items="_claims">
+                                    <HeaderContent>
+                                        <MudTh Class="col-action"></MudTh>
+                                        <MudTh Class="col-claim">Claim #</MudTh>
+                                        <MudTh Class="col-address">Address</MudTh>
+                                        <MudTh Class="col-comp">Component</MudTh>
+                                        <MudTh>Status</MudTh>
+                                    </HeaderContent>
+
+                                    <RowTemplate>
+                                        <MudTd Class="col-action">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                           Size="Size.Small"
+                                                           Color="Color.Primary"
+                                                           OnClick="@(() => Nav.NavigateTo($"/claims/{context.Id}"))" />
+                                        </MudTd>
+                                        <MudTd Class="col-claim">@context.ClaimNumber</MudTd>
+                                        <MudTd Class="col-address clamp-2">@context.Address</MudTd>
+                                        <MudTd Class="col-comp">@context.ComponentCode</MudTd>
+                                        <MudTd>@context.Status</MudTd>
+                                    </RowTemplate>
+
+                                    <NoRecordsContent>
+                                        <MudText Class="pa-4">No linked claims.</MudText>
+                                    </NoRecordsContent>
+                                </MudTable>
+                            </div>
+                        </MudPaper>
+
+                        <!-- Linked Work Orders -->
+                        <MudPaper Elevation="1" Class="action-card list-card">
+                            <MudText Typo="Typo.h6" Class="mb-2">Linked Work Orders</MudText>
+
+                            <div class="table-scroll">
+                                <MudTable T="WorkOrder"
+                                          Dense="true"
+                                          Hover="true"
+                                          Breakpoint="Breakpoint.None"
+                                          Items="_workOrders">
+                                    <HeaderContent>
+                                        <MudTh Class="col-action"></MudTh>
+                                        <MudTh>Scheduled</MudTh>
+                                        <MudTh Class="col-address">Service Address</MudTh>
+                                        <MudTh>Status</MudTh>
+                                    </HeaderContent>
+
+                                    <RowTemplate>
+                                        <MudTd Class="col-action">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                           Size="Size.Small"
+                                                           Color="Color.Primary"
+                                                           OnClick="@(() => Nav.NavigateTo($"/work-orders/{context.Id}"))" />
+                                        </MudTd>
+                                        <MudTd>@context.ScheduledServiceDate?.ToString("MM/dd/yyyy")</MudTd>
+                                        <MudTd Class="col-address clamp-2">@context.ServiceAddress</MudTd>
+                                        <MudTd>@context.Status</MudTd>
+                                    </RowTemplate>
+
+                                    <NoRecordsContent>
+                                        <MudText Class="pa-4">No linked work orders.</MudText>
+                                    </NoRecordsContent>
+                                </MudTable>
+                            </div>
+                        </MudPaper>
+
+                    </MudStack>
+                </MudItem>
+
+            </MudGrid>
+        }
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool _loading = true;
+
+    private Customer? _customer;
+    private List<WarrantyClaim> _claims = new();
+    private List<WorkOrder> _workOrders = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        _customer = await db.Customers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == Id);
+
+        if (_customer is not null)
+        {
+            _claims = await db.WarrantyClaims
+                .AsNoTracking()
+                .Where(x => x.CustomerId == Id)
+                .OrderByDescending(x => x.FailureDate)
+                .ThenByDescending(x => x.ClaimNumber)
+                .Take(200)
+                .ToListAsync();
+
+            _workOrders = await db.WorkOrders
+                .AsNoTracking()
+                .Where(x => x.CustomerId == Id)
+                .OrderByDescending(x => x.ScheduledServiceDate)
+                .Take(200)
+                .ToListAsync();
+        }
+
+        _loading = false;
+    }
+
+    private void BackToList()
+        => Nav.NavigateTo("/customers");
+}
